@@ -98,6 +98,15 @@ STATUS_SQL = (
 )
 
 
+def like(term: str) -> str:
+    """LIKE 패턴 이스케이프 — 사용자 입력의 %/_를 리터럴로 취급 (ESC와 짝)."""
+    escaped = term.strip().replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
+ESC = " ESCAPE '\\'"
+
+
 def normalize_weekdays(weekday: list[str] | None) -> list[str]:
     out = []
     for w in weekday or []:
@@ -111,10 +120,10 @@ def normalize_weekdays(weekday: list[str] | None) -> list[str]:
 def region_clause(region: str | None, params: dict[str, Any]) -> str:
     if not region:
         return ""
-    params["region"] = f"%{region.strip()}%"
+    params["region"] = like(region)
     return (
-        " AND (시도 LIKE :region OR 시군구 LIKE :region"
-        " OR 교육장도로명주소 LIKE :region OR 교육장소 LIKE :region)"
+        f" AND (시도 LIKE :region{ESC} OR 시군구 LIKE :region{ESC}"
+        f" OR 교육장도로명주소 LIKE :region{ESC} OR 교육장소 LIKE :region{ESC})"
     )
 
 
@@ -167,8 +176,8 @@ def search_courses(
     params: dict[str, Any] = {"today": today}
     where = ["1=1"]
     if keyword:
-        params["kw"] = f"%{keyword.strip()}%"
-        where.append("(강좌명 LIKE :kw OR 강좌내용 LIKE :kw OR 교육장소 LIKE :kw)")
+        params["kw"] = like(keyword)
+        where.append(f"(강좌명 LIKE :kw{ESC} OR 강좌내용 LIKE :kw{ESC} OR 교육장소 LIKE :kw{ESC})")
     where.append(region_clause(region, params).replace(" AND ", "", 1) or "1=1")
     days = normalize_weekdays(weekday)
     if days:
@@ -193,8 +202,8 @@ def search_courses(
                     params["t2"] = m.group(2).zfill(5)
                     where.append("교육시작시각 <= :t2")
     if target:
-        params["target"] = f"%{target.strip()}%"
-        where.append("교육대상구분 LIKE :target")
+        params["target"] = like(target)
+        where.append(f"교육대상구분 LIKE :target{ESC}")
     if free_only:
         where.append("무료여부 = 1")
     statuses = []
@@ -269,8 +278,8 @@ def get_enrollment_calendar(
     if region:
         where += region_clause(region, params)
     if center_name:
-        params["center"] = f"%{center_name.strip()}%"
-        where += " AND 운영기관명 LIKE :center"
+        params["center"] = like(center_name)
+        where += f" AND 운영기관명 LIKE :center{ESC}"
 
     con = db()
     upcoming = con.execute(
@@ -285,11 +294,11 @@ def get_enrollment_calendar(
     p_params: dict[str, Any] = {"today": today, "horizon": f"+{horizon} days"}
     p_where = ""
     if region:
-        p_params["region"] = f"%{region.strip()}%"
-        p_where += " AND (시도 LIKE :region OR 시군구 LIKE :region OR 기관 LIKE :region)"
+        p_params["region"] = like(region)
+        p_where += f" AND (시도 LIKE :region{ESC} OR 시군구 LIKE :region{ESC} OR 기관 LIKE :region{ESC})"
     if center_name:
-        p_params["center"] = f"%{center_name.strip()}%"
-        p_where += " AND 기관 LIKE :center"
+        p_params["center"] = like(center_name)
+        p_where += f" AND 기관 LIKE :center{ESC}"
     predicted = con.execute(
         "SELECT 기관, 시도, 시군구, 회차수, 다음오픈예상, 근거 FROM enrollment_patterns"
         f" WHERE 다음오픈예상 <= date(:today, :horizon){p_where}"
@@ -438,16 +447,16 @@ def list_courses_by_center(
         parts.append("\n기관명을 center_name으로 넣으면 강좌 목록을 볼 수 있습니다.")
         return finalize("\n".join(parts))
 
-    params = {"today": today, "center": f"%{center_name.strip()}%"}
+    params = {"today": today, "center": like(center_name)}
     rc = region_clause(region, params)
     page = max(1, page)
     params["limit"], params["offset"] = PAGE_SIZE, (page - 1) * PAGE_SIZE
     total = con.execute(
-        f"SELECT COUNT(*) FROM courses WHERE 운영기관명 LIKE :center{rc}", params
+        f"SELECT COUNT(*) FROM courses WHERE 운영기관명 LIKE :center{ESC}{rc}", params
     ).fetchone()[0]
     rows = con.execute(
         f"SELECT *, {STATUS_SQL} AS 접수상태 FROM courses"
-        f" WHERE 운영기관명 LIKE :center{rc}"
+        f" WHERE 운영기관명 LIKE :center{ESC}{rc}"
         " ORDER BY CASE 접수상태 WHEN '접수중' THEN 0 WHEN '예정' THEN 1"
         " WHEN '상시' THEN 2 ELSE 3 END, 접수종료일자 LIMIT :limit OFFSET :offset",
         params,
@@ -478,16 +487,16 @@ def get_filter_options(region: str | None = None) -> str:
     today = today_kst()
     con = db()
     if region:
-        params: dict[str, Any] = {"region": f"%{region.strip()}%"}
+        params: dict[str, Any] = {"region": like(region)}
         rows = con.execute(
             "SELECT 시도, 시군구, COUNT(*) FROM courses"
-            " WHERE 시도 LIKE :region OR 시군구 LIKE :region"
+            f" WHERE 시도 LIKE :region{ESC} OR 시군구 LIKE :region{ESC}"
             " GROUP BY 시도, 시군구 ORDER BY 3 DESC LIMIT 30",
             params,
         ).fetchall()
         targets = con.execute(
             "SELECT 교육대상구분, COUNT(*) FROM courses"
-            " WHERE (시도 LIKE :region OR 시군구 LIKE :region) AND 교육대상구분 != ''"
+            f" WHERE (시도 LIKE :region{ESC} OR 시군구 LIKE :region{ESC}) AND 교육대상구분 != ''"
             " GROUP BY 교육대상구분 ORDER BY 2 DESC LIMIT 15",
             params,
         ).fetchall()

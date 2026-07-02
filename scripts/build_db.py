@@ -78,6 +78,8 @@ def parse_weekdays(raw: str) -> str:
         a, b = WEEKDAYS.index(range_m.group(1)), WEEKDAYS.index(range_m.group(2))
         if a <= b:
             found.extend(WEEKDAYS[a : b + 1])
+        else:  # 역순(금~월)은 순환 범위: 금,토,일,월
+            found.extend(WEEKDAYS[a:] + WEEKDAYS[: b + 1])
         text = text[: range_m.start()] + text[range_m.end() :]
     for ch in text:
         if ch in WEEKDAYS and ch not in found:

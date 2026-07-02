@@ -24,6 +24,14 @@ WEEKDAYS = "월화수목금토일"
 EN_DAYS = {"mon": "월", "tue": "화", "wed": "수", "thu": "목", "fri": "금", "sat": "토", "sun": "일"}
 STATUS_VALUES = ("접수중", "예정", "상시", "마감", "미상")
 DEFAULT_STATUS = ["접수중", "예정", "상시"]
+# 실전에서 LLM이 영문 enum을 보내는 사례 관측(PlayMCP AI채팅) → alias 수용
+STATUS_ALIASES = {
+    "open": "접수중", "opened": "접수중", "ongoing": "접수중",
+    "upcoming": "예정", "scheduled": "예정",
+    "always_open": "상시", "always": "상시", "anytime": "상시",
+    "closed": "마감", "ended": "마감",
+    "unknown": "미상",
+}
 
 mcp = FastMCP(
     "baeum-alrimi",
@@ -184,7 +192,11 @@ def search_courses(
         where.append("교육대상구분 LIKE :target")
     if free_only:
         where.append("무료여부 = 1")
-    statuses = [s for s in (status or DEFAULT_STATUS) if s in STATUS_VALUES]
+    statuses = []
+    for s in status or DEFAULT_STATUS:
+        s = STATUS_ALIASES.get(s.strip().lower(), s.strip())
+        if s in STATUS_VALUES and s not in statuses:
+            statuses.append(s)
     if not statuses:
         statuses = DEFAULT_STATUS
     where.append(f"({STATUS_SQL}) IN ({','.join(repr(s) for s in statuses)})")

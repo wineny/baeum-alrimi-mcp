@@ -1,0 +1,10 @@
+.omc/
+.playwright-mcp/
+data/raw/
+data/raw_facilities/
+data/*.json
+data/*.csv
+scripts/
+tests/
+*.md
+__pycache__/

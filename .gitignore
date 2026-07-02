@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+.omc/
+.playwright-mcp/
+data/raw/
+data/raw_facilities/
+data/download_failures.json
+data/facility_download_failures.json

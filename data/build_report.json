@@ -1,0 +1,1260 @@
+{
+ "build_date": "2026-07-02",
+ "files": {
+  "강원특별자치도_동해시_평생학습강좌": {
+   "rows": 46,
+   "encoding": "utf-8-sig",
+   "date_parse": "184/184",
+   "extra_cols": []
+  },
+  "강원특별자치도_원주시_평생학습강좌": {
+   "rows": 85,
+   "encoding": "utf-8-sig",
+   "date_parse": "340/340",
+   "extra_cols": []
+  },
+  "강원특별자치도_정선군_평생학습강좌": {
+   "rows": 4,
+   "encoding": "utf-8-sig",
+   "date_parse": "16/16",
+   "extra_cols": []
+  },
+  "강원특별자치도_춘천시_평생학습강좌": {
+   "rows": 98,
+   "encoding": "utf-8-sig",
+   "date_parse": "392/392",
+   "extra_cols": []
+  },
+  "강원특별자치도_태백시_평생학습강좌": {
+   "rows": 36,
+   "encoding": "utf-8-sig",
+   "date_parse": "144/144",
+   "extra_cols": []
+  },
+  "강원특별자치도_화천군_평생학습강좌": {
+   "rows": 81,
+   "encoding": "utf-8-sig",
+   "date_parse": "314/314",
+   "extra_cols": []
+  },
+  "강원특별자치도교육청_평생학습강좌": {
+   "rows": 361,
+   "encoding": "utf-8-sig",
+   "date_parse": "1444/1444",
+   "extra_cols": []
+  },
+  "거제해양관광개발공사_평생학습강좌": {
+   "rows": 8,
+   "encoding": "utf-8-sig",
+   "date_parse": "32/32",
+   "extra_cols": []
+  },
+  "경기도_과천시_평생학습강좌": {
+   "rows": 57,
+   "encoding": "utf-8-sig",
+   "date_parse": "228/228",
+   "extra_cols": []
+  },
+  "경기도_광명시_평생학습강좌": {
+   "rows": 372,
+   "encoding": "utf-8-sig",
+   "date_parse": "1488/1488",
+   "extra_cols": []
+  },
+  "경기도_광주시_평생학습강좌": {
+   "rows": 155,
+   "encoding": "utf-8-sig",
+   "date_parse": "620/620",
+   "extra_cols": []
+  },
+  "경기도_구리시_평생학습강좌": {
+   "rows": 62,
+   "encoding": "utf-8-sig",
+   "date_parse": "248/248",
+   "extra_cols": []
+  },
+  "경기도_군포시_평생학습강좌": {
+   "rows": 196,
+   "encoding": "utf-8-sig",
+   "date_parse": "392/392",
+   "extra_cols": []
+  },
+  "경기도_김포시_평생학습강좌": {
+   "rows": 57,
+   "encoding": "utf-8-sig",
+   "date_parse": "228/228",
+   "extra_cols": []
+  },
+  "경기도_남양주시_평생학습강좌": {
+   "rows": 90,
+   "encoding": "utf-8-sig",
+   "date_parse": "360/360",
+   "extra_cols": []
+  },
+  "경기도_동두천시_평생학습강좌": {
+   "rows": 78,
+   "encoding": "utf-8-sig",
+   "date_parse": "312/312",
+   "extra_cols": []
+  },
+  "경기도_부천시_평생학습강좌": {
+   "rows": 60,
+   "encoding": "utf-8-sig",
+   "date_parse": "240/240",
+   "extra_cols": []
+  },
+  "경기도_성남시_평생학습강좌": {
+   "rows": 83,
+   "encoding": "utf-8-sig",
+   "date_parse": "332/332",
+   "extra_cols": []
+  },
+  "경기도_시흥시_평생학습강좌": {
+   "rows": 72,
+   "encoding": "utf-8-sig",
+   "date_parse": "288/288",
+   "extra_cols": []
+  },
+  "경기도_안산시_평생학습강좌": {
+   "rows": 148,
+   "encoding": "utf-8-sig",
+   "date_parse": "592/592",
+   "extra_cols": []
+  },
+  "경기도_안성시_평생학습강좌": {
+   "rows": 79,
+   "encoding": "utf-8-sig",
+   "date_parse": "316/316",
+   "extra_cols": []
+  },
+  "경기도_안양시_평생학습강좌": {
+   "rows": 225,
+   "encoding": "utf-8-sig",
+   "date_parse": "900/900",
+   "extra_cols": []
+  },
+  "경기도_여주시_평생학습강좌": {
+   "rows": 33,
+   "encoding": "utf-8-sig",
+   "date_parse": "132/132",
+   "extra_cols": []
+  },
+  "경기도_연천군_평생학습강좌": {
+   "rows": 33,
+   "encoding": "utf-8-sig",
+   "date_parse": "132/132",
+   "extra_cols": []
+  },
+  "경기도_오산시_평생학습강좌": {
+   "rows": 403,
+   "encoding": "utf-8-sig",
+   "date_parse": "1612/1612",
+   "extra_cols": []
+  },
+  "경기도_용인시_평생학습강좌": {
+   "rows": 122,
+   "encoding": "utf-8-sig",
+   "date_parse": "244/244",
+   "extra_cols": []
+  },
+  "경기도_이천시_평생학습강좌": {
+   "rows": 143,
+   "encoding": "utf-8-sig",
+   "date_parse": "558/558",
+   "extra_cols": []
+  },
+  "경기도_파주시_평생학습강좌": {
+   "rows": 89,
+   "encoding": "utf-8-sig",
+   "date_parse": "356/356",
+   "extra_cols": []
+  },
+  "경기도_평택시_평생학습강좌": {
+   "rows": 129,
+   "encoding": "utf-8-sig",
+   "date_parse": "516/516",
+   "extra_cols": []
+  },
+  "경기도_하남시_평생학습강좌": {
+   "rows": 26,
+   "encoding": "utf-8-sig",
+   "date_parse": "104/104",
+   "extra_cols": []
+  },
+  "경기도_화성시_평생학습강좌": {
+   "rows": 47,
+   "encoding": "utf-8-sig",
+   "date_parse": "188/188",
+   "extra_cols": []
+  },
+  "경기도교육청_경기도교육청과천도서관_평생학습강좌": {
+   "rows": 3,
+   "encoding": "utf-8-sig",
+   "date_parse": "12/12",
+   "extra_cols": []
+  },
+  "경기도교육청_경기도교육청중앙도서관_평생학습강좌": {
+   "rows": 9,
+   "encoding": "utf-8-sig",
+   "date_parse": "36/36",
+   "extra_cols": []
+  },
+  "경기도교육청_경기도교육청평생학습관_평생학습강좌": {
+   "rows": 171,
+   "encoding": "utf-8-sig",
+   "date_parse": "684/684",
+   "extra_cols": []
+  },
+  "경상남도_거제시_평생학습강좌": {
+   "rows": 76,
+   "encoding": "utf-8-sig",
+   "date_parse": "304/304",
+   "extra_cols": []
+  },
+  "경상남도_거창군_평생학습강좌": {
+   "rows": 25,
+   "encoding": "utf-8-sig",
+   "date_parse": "100/100",
+   "extra_cols": []
+  },
+  "경상남도_고성군_평생학습강좌": {
+   "rows": 16,
+   "encoding": "utf-8-sig",
+   "date_parse": "64/64",
+   "extra_cols": []
+  },
+  "경상남도_김해시_평생학습강좌": {
+   "rows": 606,
+   "encoding": "utf-8-sig",
+   "date_parse": "1212/1212",
+   "extra_cols": []
+  },
+  "경상남도_사천시_평생학습강좌": {
+   "rows": 25,
+   "encoding": "utf-8-sig",
+   "date_parse": "100/100",
+   "extra_cols": []
+  },
+  "경상남도_양산시_평생학습강좌": {
+   "rows": 358,
+   "encoding": "utf-8-sig",
+   "date_parse": "1283/1283",
+   "extra_cols": []
+  },
+  "경상남도_진주시_평생학습강좌": {
+   "rows": 220,
+   "encoding": "utf-8-sig",
+   "date_parse": "880/880",
+   "extra_cols": []
+  },
+  "경상남도_창녕군_평생학습강좌": {
+   "rows": 16,
+   "encoding": "utf-8-sig",
+   "date_parse": "64/64",
+   "extra_cols": []
+  },
+  "경상남도_통영시_평생학습강좌": {
+   "rows": 25,
+   "encoding": "utf-8-sig",
+   "date_parse": "100/100",
+   "extra_cols": []
+  },
+  "경상남도_함양군_평생학습강좌": {
+   "rows": 13,
+   "encoding": "utf-8-sig",
+   "date_parse": "52/52",
+   "extra_cols": []
+  },
+  "경상남도_합천군_평생학습강좌": {
+   "rows": 36,
+   "encoding": "utf-8-sig",
+   "date_parse": "72/72",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도거제교육지원청_경상남도교육청거제도서관_평생학습강좌": {
+   "rows": 6,
+   "encoding": "utf-8-sig",
+   "date_parse": "12/12",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도거창교육지원청_경상남도교육청거창도서관_평생학습강좌": {
+   "rows": 5,
+   "encoding": "utf-8-sig",
+   "date_parse": "20/20",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도밀양교육지원청_경상남도교육청밀양도서관_평생학습강좌": {
+   "rows": 6,
+   "encoding": "utf-8-sig",
+   "date_parse": "24/24",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도밀양교육지원청_경상남도교육청하남도서관_평생학습강좌": {
+   "rows": 4,
+   "encoding": "utf-8-sig",
+   "date_parse": "16/16",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도사천교육지원청_경상남도교육청사천도서관_평생학습강좌": {
+   "rows": 4,
+   "encoding": "utf-8-sig",
+   "date_parse": "16/16",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도산청교육지원청_경상남도교육청산청도서관_평생학습강좌": {
+   "rows": 4,
+   "encoding": "utf-8-sig",
+   "date_parse": "16/16",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도산청교육지원청_경상남도교육청산청지리산도서관_평생학습강좌": {
+   "rows": 5,
+   "encoding": "utf-8-sig",
+   "date_parse": "20/20",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도의령교육지원청_경상남도교육청의령도서관_평생학습강좌": {
+   "rows": 4,
+   "encoding": "utf-8-sig",
+   "date_parse": "16/16",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도진주교육지원청_경상남도교육청진양도서관_평생학습강좌": {
+   "rows": 9,
+   "encoding": "utf-8-sig",
+   "date_parse": "36/36",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도창녕교육지원청_경상남도교육청창녕도서관_평생학습강좌": {
+   "rows": 5,
+   "encoding": "utf-8-sig",
+   "date_parse": "20/20",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도창원교육지원청_경상남도교육청마산지혜의바다도서관_평생학습강좌": {
+   "rows": 13,
+   "encoding": "utf-8-sig",
+   "date_parse": "52/52",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도창원교육지원청_경상남도교육청진동도서관_평생학습강좌": {
+   "rows": 5,
+   "encoding": "utf-8-sig",
+   "date_parse": "20/20",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도통영교육지원청_경상남도교육청통영도서관_평생학습강좌": {
+   "rows": 5,
+   "encoding": "utf-8-sig",
+   "date_parse": "20/20",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도하동교육지원청_경상남도교육청하동도서관_평생학습강좌": {
+   "rows": 4,
+   "encoding": "utf-8-sig",
+   "date_parse": "16/16",
+   "extra_cols": []
+  },
+  "경상남도교육청_경상남도함안교육지원청_경상남도교육청함안도서관_평생학습강좌": {
+   "rows": 5,
+   "encoding": "utf-8-sig",
+   "date_parse": "20/20",
+   "extra_cols": []
+  },
+  "경상북도_경산시_평생학습강좌": {
+   "rows": 98,
+   "encoding": "utf-8-sig",
+   "date_parse": "392/392",
+   "extra_cols": []
+  },
+  "경상북도_경주시_평생학습강좌": {
+   "rows": 94,
+   "encoding": "utf-8-sig",
+   "date_parse": "376/376",
+   "extra_cols": []
+  },
+  "경상북도_구미시_평생학습강좌": {
+   "rows": 69,
+   "encoding": "utf-8-sig",
+   "date_parse": "276/276",
+   "extra_cols": []
+  },
+  "경상북도_김천시_평생학습강좌": {
+   "rows": 69,
+   "encoding": "utf-8-sig",
+   "date_parse": "276/276",
+   "extra_cols": []
+  },
+  "경상북도_봉화군_평생학습강좌": {
+   "rows": 22,
+   "encoding": "utf-8-sig",
+   "date_parse": "88/88",
+   "extra_cols": []
+  },
+  "경상북도_안동시_평생학습강좌": {
+   "rows": 46,
+   "encoding": "utf-8-sig",
+   "date_parse": "184/184",
+   "extra_cols": []
+  },
+  "경상북도_영주시_평생학습강좌": {
+   "rows": 50,
+   "encoding": "utf-8-sig",
+   "date_parse": "200/200",
+   "extra_cols": []
+  },
+  "경상북도_영천시_평생학습강좌": {
+   "rows": 46,
+   "encoding": "utf-8-sig",
+   "date_parse": "184/184",
+   "extra_cols": []
+  },
+  "경상북도_예천군_평생학습강좌": {
+   "rows": 3,
+   "encoding": "utf-8-sig",
+   "date_parse": "12/12",
+   "extra_cols": []
+  },
+  "경상북도_울진군_평생학습강좌": {
+   "rows": 1,
+   "encoding": "utf-8-sig",
+   "date_parse": "2/2",
+   "extra_cols": []
+  },
+  "경상북도_의성군_평생학습강좌": {
+   "rows": 42,
+   "encoding": "utf-8-sig",
+   "date_parse": "168/168",
+   "extra_cols": []
+  },
+  "경상북도_청도군_평생학습강좌": {
+   "rows": 300,
+   "encoding": "utf-8-sig",
+   "date_parse": "600/600",
+   "extra_cols": []
+  },
+  "경상북도_청송군_평생학습강좌": {
+   "rows": 18,
+   "encoding": "utf-8-sig",
+   "date_parse": "72/72",
+   "extra_cols": []
+  },
+  "경상북도_포항시_평생학습강좌": {
+   "rows": 96,
+   "encoding": "utf-8-sig",
+   "date_parse": "384/384",
+   "extra_cols": []
+  },
+  "경상북도교육청_경상북도경주교육지원청_평생학습강좌": {
+   "rows": 7,
+   "encoding": "utf-8-sig",
+   "date_parse": "28/28",
+   "extra_cols": []
+  },
+  "경상북도교육청_경상북도교육청구미도서관_평생학습강좌": {
+   "rows": 26,
+   "encoding": "utf-8-sig",
+   "date_parse": "104/104",
+   "extra_cols": []
+  },
+  "경상북도교육청_경상북도포항교육지원청_평생학습강좌": {
+   "rows": 5,
+   "encoding": "utf-8-sig",
+   "date_parse": "20/20",
+   "extra_cols": []
+  },
+  "광주광역시_광산구_평생학습강좌": {
+   "rows": 439,
+   "encoding": "utf-8-sig",
+   "date_parse": "1756/1756",
+   "extra_cols": []
+  },
+  "광주광역시_남구_평생학습강좌": {
+   "rows": 39,
+   "encoding": "utf-8-sig",
+   "date_parse": "116/116",
+   "extra_cols": []
+  },
+  "광주광역시_동구_평생학습강좌": {
+   "rows": 6,
+   "encoding": "utf-8-sig",
+   "date_parse": "24/24",
+   "extra_cols": []
+  },
+  "광주광역시_북구_평생학습강좌": {
+   "rows": 14,
+   "encoding": "utf-8-sig",
+   "date_parse": "56/56",
+   "extra_cols": []
+  },
+  "광주광역시_서구_평생학습강좌": {
+   "rows": 20,
+   "encoding": "utf-8-sig",
+   "date_parse": "80/80",
+   "extra_cols": []
+  },
+  "대구광역시_군위군_평생학습강좌": {
+   "rows": 2,
+   "encoding": "utf-8-sig",
+   "date_parse": "8/8",
+   "extra_cols": []
+  },
+  "대구광역시_달서구_평생학습강좌": {
+   "rows": 127,
+   "encoding": "utf-8-sig",
+   "date_parse": "410/410",
+   "extra_cols": []
+  },
+  "대구광역시_달성군_평생학습강좌": {
+   "rows": 153,
+   "encoding": "utf-8-sig",
+   "date_parse": "612/612",
+   "extra_cols": []
+  },
+  "대구광역시_동구_평생학습강좌": {
+   "rows": 6,
+   "encoding": "utf-8-sig",
+   "date_parse": "24/24",
+   "extra_cols": []
+  },
+  "대구광역시_북구_평생학습강좌": {
+   "rows": 13,
+   "encoding": "utf-8-sig",
+   "date_parse": "52/52",
+   "extra_cols": []
+  },
+  "대구광역시_서구_평생학습강좌": {
+   "rows": 26,
+   "encoding": "utf-8-sig",
+   "date_parse": "104/104",
+   "extra_cols": []
+  },
+  "대구광역시_수성구_평생학습강좌": {
+   "rows": 403,
+   "encoding": "utf-8-sig",
+   "date_parse": "1612/1612",
+   "extra_cols": []
+  },
+  "대구광역시교육청_국채보상운동기념도서관_평생학습강좌": {
+   "rows": 7,
+   "encoding": "utf-8-sig",
+   "date_parse": "28/28",
+   "extra_cols": []
+  },
+  "대구광역시교육청_대구2.28기념학생도": {
+   "rows": 15,
+   "encoding": "utf-8-sig",
+   "date_parse": "60/60",
+   "extra_cols": []
+  },
+  "대구광역시교육청_대구광역시교육청삼국유사군위도서관_평생학습강좌": {
+   "rows": 11,
+   "encoding": "utf-8-sig",
+   "date_parse": "44/44",
+   "extra_cols": []
+  },
+  "대구광역시교육청_대구광역시립남부도서관_평생학습강좌": {
+   "rows": 27,
+   "encoding": "utf-8-sig",
+   "date_parse": "108/108",
+   "extra_cols": []
+  },
+  "대구광역시교육청_대구광역시립달성도서관_평생학습강좌": {
+   "rows": 27,
+   "encoding": "utf-8-sig",
+   "date_parse": "108/108",
+   "extra_cols": []
+  },
+  "대구광역시교육청_대구광역시립동부도서관_평생학습강좌": {
+   "rows": 6,
+   "encoding": "utf-8-sig",
+   "date_parse": "24/24",
+   "extra_cols": []
+  },
+  "대구광역시교육청_대구광역시립두류도서관_평생학습강좌": {
+   "rows": 9,
+   "encoding": "utf-8-sig",
+   "date_parse": "36/36",
+   "extra_cols": []
+  },
+  "대구광역시교육청_대구광역시립북부도서관_평생학습강좌": {
+   "rows": 23,
+   "encoding": "utf-8-sig",
+   "date_parse": "92/92",
+   "extra_cols": []
+  },
+  "대구광역시교육청_대구광역시립서부도서관_평생학습강좌": {
+   "rows": 32,
+   "encoding": "utf-8-sig",
+   "date_parse": "128/128",
+   "extra_cols": []
+  },
+  "대구광역시교육청_대구광역시립수성도서관_평생학습강좌": {
+   "rows": 22,
+   "encoding": "utf-8-sig",
+   "date_parse": "88/88",
+   "extra_cols": []
+  },
+  "대전광역시_대덕구_평생학습강좌": {
+   "rows": 3,
+   "encoding": "utf-8-sig",
+   "date_parse": "10/10",
+   "extra_cols": []
+  },
+  "대전광역시_동구_평생학습강좌": {
+   "rows": 11,
+   "encoding": "utf-8-sig",
+   "date_parse": "44/44",
+   "extra_cols": []
+  },
+  "대전광역시_서구_평생학습강좌": {
+   "rows": 100,
+   "encoding": "utf-8-sig",
+   "date_parse": "400/400",
+   "extra_cols": []
+  },
+  "대전광역시_유성구_평생학습강좌": {
+   "rows": 134,
+   "encoding": "utf-8-sig",
+   "date_parse": "536/536",
+   "extra_cols": []
+  },
+  "대전광역시교육청_평생학습강좌": {
+   "rows": 47,
+   "encoding": "utf-8-sig",
+   "date_parse": "188/188",
+   "extra_cols": []
+  },
+  "문화체육관광부_국립국악원_평생학습강좌": {
+   "rows": 473,
+   "encoding": "utf-8-sig",
+   "date_parse": "1892/1892",
+   "extra_cols": []
+  },
+  "부산광역시_강서구_평생학습강좌": {
+   "rows": 42,
+   "encoding": "utf-8-sig",
+   "date_parse": "168/168",
+   "extra_cols": []
+  },
+  "부산광역시_기장군_평생학습강좌": {
+   "rows": 90,
+   "encoding": "utf-8-sig",
+   "date_parse": "360/360",
+   "extra_cols": []
+  },
+  "부산광역시_남구_평생학습강좌": {
+   "rows": 16,
+   "encoding": "utf-8-sig",
+   "date_parse": "64/64",
+   "extra_cols": []
+  },
+  "부산광역시_동구_평생학습강좌": {
+   "rows": 96,
+   "encoding": "utf-8-sig",
+   "date_parse": "384/384",
+   "extra_cols": []
+  },
+  "부산광역시_동래구_평생학습강좌": {
+   "rows": 52,
+   "encoding": "utf-8-sig",
+   "date_parse": "208/208",
+   "extra_cols": []
+  },
+  "부산광역시_북구_평생학습강좌": {
+   "rows": 45,
+   "encoding": "utf-8-sig",
+   "date_parse": "180/180",
+   "extra_cols": []
+  },
+  "부산광역시_사상구_평생학습강좌": {
+   "rows": 39,
+   "encoding": "utf-8-sig",
+   "date_parse": "156/156",
+   "extra_cols": []
+  },
+  "부산광역시_사하구_평생학습강좌": {
+   "rows": 74,
+   "encoding": "utf-8-sig",
+   "date_parse": "296/296",
+   "extra_cols": []
+  },
+  "부산광역시_서구_평생학습강좌": {
+   "rows": 410,
+   "encoding": "utf-8-sig",
+   "date_parse": "1640/1640",
+   "extra_cols": []
+  },
+  "부산광역시_수영구_평생학습강좌": {
+   "rows": 28,
+   "encoding": "utf-8-sig",
+   "date_parse": "112/112",
+   "extra_cols": []
+  },
+  "부산광역시_연제구_평생학습강좌": {
+   "rows": 13,
+   "encoding": "utf-8-sig",
+   "date_parse": "52/52",
+   "extra_cols": []
+  },
+  "부산광역시_영도구_평생학습강좌": {
+   "rows": 1,
+   "encoding": "utf-8-sig",
+   "date_parse": "4/4",
+   "extra_cols": []
+  },
+  "부산광역시_중구_평생학습강좌": {
+   "rows": 41,
+   "encoding": "utf-8-sig",
+   "date_parse": "164/164",
+   "extra_cols": []
+  },
+  "부산광역시_해운대구_평생학습강좌": {
+   "rows": 14,
+   "encoding": "utf-8-sig",
+   "date_parse": "56/56",
+   "extra_cols": []
+  },
+  "부산광역시교육청_부산광역시립구덕도서관_평생학습강좌": {
+   "rows": 8,
+   "encoding": "utf-8-sig",
+   "date_parse": "32/32",
+   "extra_cols": []
+  },
+  "부산광역시교육청_부산광역시립구포도서관_평생학습강좌": {
+   "rows": 25,
+   "encoding": "utf-8-sig",
+   "date_parse": "100/100",
+   "extra_cols": []
+  },
+  "부산광역시교육청_부산광역시립명장도서관_평생학습강좌": {
+   "rows": 12,
+   "encoding": "utf-8-sig",
+   "date_parse": "48/48",
+   "extra_cols": []
+  },
+  "부산광역시교육청_부산광역시립부전도서관_평생학습강좌": {
+   "rows": 8,
+   "encoding": "utf-8-sig",
+   "date_parse": "32/32",
+   "extra_cols": []
+  },
+  "부산광역시교육청_부산광역시립사하도서관_평생학습강좌": {
+   "rows": 12,
+   "encoding": "utf-8-sig",
+   "date_parse": "48/48",
+   "extra_cols": []
+  },
+  "부산광역시교육청_부산광역시립서동도서관_평생학습강좌": {
+   "rows": 6,
+   "encoding": "utf-8-sig",
+   "date_parse": "24/24",
+   "extra_cols": []
+  },
+  "부산광역시교육청_부산광역시립시민도서관_평생학습강좌": {
+   "rows": 28,
+   "encoding": "utf-8-sig",
+   "date_parse": "56/56",
+   "extra_cols": []
+  },
+  "부산광역시교육청_부산광역시립연산도서관_평생학습강좌": {
+   "rows": 10,
+   "encoding": "utf-8-sig",
+   "date_parse": "40/40",
+   "extra_cols": []
+  },
+  "부산광역시교육청_부산광역시립중앙도서관_평생학습강좌": {
+   "rows": 25,
+   "encoding": "utf-8-sig",
+   "date_parse": "100/100",
+   "extra_cols": []
+  },
+  "부산광역시교육청_부산광역시립해운대도서관_평생학습강좌": {
+   "rows": 33,
+   "encoding": "utf-8-sig",
+   "date_parse": "132/132",
+   "extra_cols": []
+  },
+  "서울특별시_강남구_평생학습강좌": {
+   "rows": 322,
+   "encoding": "utf-8-sig",
+   "date_parse": "1288/1288",
+   "extra_cols": []
+  },
+  "서울특별시_강동구_평생학습강좌": {
+   "rows": 4,
+   "encoding": "utf-8-sig",
+   "date_parse": "16/16",
+   "extra_cols": []
+  },
+  "서울특별시_강북구_평생학습강좌": {
+   "rows": 13,
+   "encoding": "utf-8-sig",
+   "date_parse": "52/52",
+   "extra_cols": []
+  },
+  "서울특별시_강서구_평생학습강좌": {
+   "rows": 49,
+   "encoding": "utf-8-sig",
+   "date_parse": "196/196",
+   "extra_cols": []
+  },
+  "서울특별시_관악구_평생학습강좌": {
+   "rows": 65,
+   "encoding": "utf-8-sig",
+   "date_parse": "260/260",
+   "extra_cols": []
+  },
+  "서울특별시_구로구_평생학습강좌": {
+   "rows": 14,
+   "encoding": "utf-8-sig",
+   "date_parse": "56/56",
+   "extra_cols": []
+  },
+  "서울특별시_금천구_평생학습강좌": {
+   "rows": 19,
+   "encoding": "utf-8-sig",
+   "date_parse": "76/76",
+   "extra_cols": []
+  },
+  "서울특별시_노원구_평생학습강좌": {
+   "rows": 69,
+   "encoding": "utf-8-sig",
+   "date_parse": "276/276",
+   "extra_cols": []
+  },
+  "서울특별시_마포구_평생학습강좌": {
+   "rows": 5,
+   "encoding": "utf-8-sig",
+   "date_parse": "20/20",
+   "extra_cols": []
+  },
+  "서울특별시_서초구_평생학습강좌": {
+   "rows": 21,
+   "encoding": "utf-8-sig",
+   "date_parse": "84/84",
+   "extra_cols": []
+  },
+  "서울특별시_성북구_평생학습강좌": {
+   "rows": 27,
+   "encoding": "utf-8-sig",
+   "date_parse": "108/108",
+   "extra_cols": []
+  },
+  "서울특별시_영등포구_평생학습강좌": {
+   "rows": 51,
+   "encoding": "utf-8-sig",
+   "date_parse": "204/204",
+   "extra_cols": []
+  },
+  "서울특별시_은평구_평생학습강좌": {
+   "rows": 12,
+   "encoding": "utf-8-sig",
+   "date_parse": "48/48",
+   "extra_cols": []
+  },
+  "서울특별시_중구_평생학습강좌": {
+   "rows": 29,
+   "encoding": "utf-8-sig",
+   "date_parse": "58/58",
+   "extra_cols": []
+  },
+  "서울특별시_중랑구_평생학습강좌": {
+   "rows": 22,
+   "encoding": "utf-8-sig",
+   "date_parse": "88/88",
+   "extra_cols": []
+  },
+  "세종특별자치시_평생학습강좌": {
+   "rows": 35,
+   "encoding": "utf-8-sig",
+   "date_parse": "140/140",
+   "extra_cols": []
+  },
+  "울산광역시_남구_평생학습강좌": {
+   "rows": 24,
+   "encoding": "utf-8-sig",
+   "date_parse": "96/96",
+   "extra_cols": []
+  },
+  "울산광역시_동구_평생학습강좌": {
+   "rows": 23,
+   "encoding": "utf-8-sig",
+   "date_parse": "92/92",
+   "extra_cols": []
+  },
+  "울산광역시_북구_평생학습강좌": {
+   "rows": 38,
+   "encoding": "utf-8-sig",
+   "date_parse": "152/152",
+   "extra_cols": []
+  },
+  "울산광역시_중구_평생학습강좌": {
+   "rows": 66,
+   "encoding": "utf-8-sig",
+   "date_parse": "264/264",
+   "extra_cols": []
+  },
+  "인천광역시_강화군_평생학습강좌": {
+   "rows": 22,
+   "encoding": "utf-8-sig",
+   "date_parse": "88/88",
+   "extra_cols": []
+  },
+  "인천광역시_계양구_평생학습강좌": {
+   "rows": 21,
+   "encoding": "utf-8-sig",
+   "date_parse": "84/84",
+   "extra_cols": []
+  },
+  "인천광역시_남동구_평생학습강좌": {
+   "rows": 31,
+   "encoding": "utf-8-sig",
+   "date_parse": "124/124",
+   "extra_cols": []
+  },
+  "인천광역시_동구_평생학습강좌": {
+   "rows": 585,
+   "encoding": "utf-8-sig",
+   "date_parse": "2334/2334",
+   "extra_cols": []
+  },
+  "인천광역시_부평구_평생학습강좌": {
+   "rows": 30,
+   "encoding": "utf-8-sig",
+   "date_parse": "120/120",
+   "extra_cols": []
+  },
+  "인천광역시_서구_평생학습강좌": {
+   "rows": 42,
+   "encoding": "utf-8-sig",
+   "date_parse": "168/168",
+   "extra_cols": []
+  },
+  "인천광역시_연수구_평생학습강좌": {
+   "rows": 196,
+   "encoding": "utf-8-sig",
+   "date_parse": "784/784",
+   "extra_cols": []
+  },
+  "인천광역시_평생학습강좌": {
+   "rows": 145,
+   "encoding": "utf-8-sig",
+   "date_parse": "290/290",
+   "extra_cols": []
+  },
+  "인천광역시교육청_인천광역시강화교육지원청_평생학습강좌": {
+   "rows": 5,
+   "encoding": "utf-8-sig",
+   "date_parse": "20/20",
+   "extra_cols": []
+  },
+  "인천광역시교육청_인천광역시교육청계양도서관_평생학습강좌": {
+   "rows": 8,
+   "encoding": "utf-8-sig",
+   "date_parse": "32/32",
+   "extra_cols": []
+  },
+  "인천광역시교육청_인천광역시교육청부평도서관_평생학습강좌": {
+   "rows": 8,
+   "encoding": "utf-8-sig",
+   "date_parse": "32/32",
+   "extra_cols": []
+  },
+  "인천광역시교육청_인천광역시교육청서구도서관_평생학습강좌": {
+   "rows": 7,
+   "encoding": "utf-8-sig",
+   "date_parse": "14/14",
+   "extra_cols": []
+  },
+  "인천광역시교육청_인천광역시교육청신트리도서관_평생학습강좌": {
+   "rows": 47,
+   "encoding": "utf-8-sig",
+   "date_parse": "188/188",
+   "extra_cols": []
+  },
+  "인천광역시교육청_인천광역시교육청연수도서관_평생학습강좌": {
+   "rows": 18,
+   "encoding": "utf-8-sig",
+   "date_parse": "72/72",
+   "extra_cols": []
+  },
+  "인천광역시교육청_인천광역시교육청주안도서관_평생학습강좌": {
+   "rows": 7,
+   "encoding": "utf-8-sig",
+   "date_parse": "28/28",
+   "extra_cols": []
+  },
+  "인천광역시교육청_인천광역시교육청중앙도서관_평생학습강좌": {
+   "rows": 4,
+   "encoding": "utf-8-sig",
+   "date_parse": "16/16",
+   "extra_cols": []
+  },
+  "인천광역시교육청_인천광역시교육청평생학습관_평생학습강좌": {
+   "rows": 60,
+   "encoding": "utf-8-sig",
+   "date_parse": "240/240",
+   "extra_cols": []
+  },
+  "인천광역시교육청_인천광역시화도진도서관_평생학습강좌": {
+   "rows": 15,
+   "encoding": "utf-8-sig",
+   "date_parse": "60/60",
+   "extra_cols": []
+  },
+  "전남광주통합특별시_평생학습강좌": {
+   "rows": 465,
+   "encoding": "utf-8-sig",
+   "date_parse": "1860/1860",
+   "extra_cols": []
+  },
+  "전남광주통합특별시교육청_평생학습강좌": {
+   "rows": 604,
+   "encoding": "utf-8-sig",
+   "date_parse": "2416/2416",
+   "extra_cols": []
+  },
+  "전라남도_강진군_평생학습강좌": {
+   "rows": 37,
+   "encoding": "utf-8-sig",
+   "date_parse": "74/74",
+   "extra_cols": []
+  },
+  "전라남도_광양시_평생학습강좌": {
+   "rows": 193,
+   "encoding": "utf-8-sig",
+   "date_parse": "772/772",
+   "extra_cols": []
+  },
+  "전라남도_무안군_평생학습강좌": {
+   "rows": 48,
+   "encoding": "utf-8-sig",
+   "date_parse": "192/192",
+   "extra_cols": []
+  },
+  "전라남도_보성군_평생학습강좌": {
+   "rows": 3,
+   "encoding": "utf-8-sig",
+   "date_parse": "6/6",
+   "extra_cols": []
+  },
+  "전라남도_여수시_평생학습강좌": {
+   "rows": 35,
+   "encoding": "utf-8-sig",
+   "date_parse": "140/140",
+   "extra_cols": []
+  },
+  "전라남도_장성군_평생학습강좌": {
+   "rows": 266,
+   "encoding": "utf-8-sig",
+   "date_parse": "532/532",
+   "extra_cols": []
+  },
+  "전라남도_장흥군_평생학습강좌": {
+   "rows": 70,
+   "encoding": "utf-8-sig",
+   "date_parse": "280/280",
+   "extra_cols": []
+  },
+  "전라남도_해남군_평생학습강좌": {
+   "rows": 39,
+   "encoding": "utf-8-sig",
+   "date_parse": "156/156",
+   "extra_cols": []
+  },
+  "전라남도_화순군_평생학습강좌": {
+   "rows": 17,
+   "encoding": "utf-8-sig",
+   "date_parse": "68/68",
+   "extra_cols": []
+  },
+  "전북특별자치도_군산시_평생학습강좌": {
+   "rows": 783,
+   "encoding": "utf-8-sig",
+   "date_parse": "3132/3132",
+   "extra_cols": []
+  },
+  "전북특별자치도_남원시_평생학습강좌": {
+   "rows": 42,
+   "encoding": "utf-8-sig",
+   "date_parse": "168/168",
+   "extra_cols": []
+  },
+  "전북특별자치도_무주군_평생학습강좌": {
+   "rows": 12,
+   "encoding": "utf-8-sig",
+   "date_parse": "48/48",
+   "extra_cols": []
+  },
+  "전북특별자치도_부안군_평생학습강좌": {
+   "rows": 40,
+   "encoding": "utf-8-sig",
+   "date_parse": "160/160",
+   "extra_cols": []
+  },
+  "전북특별자치도_익산시_평생학습강좌": {
+   "rows": 16,
+   "encoding": "utf-8-sig",
+   "date_parse": "64/64",
+   "extra_cols": []
+  },
+  "전북특별자치도_임실군_평생학습강좌": {
+   "rows": 26,
+   "encoding": "utf-8-sig",
+   "date_parse": "52/52",
+   "extra_cols": []
+  },
+  "전북특별자치도_장수군_평생학습강좌": {
+   "rows": 14,
+   "encoding": "utf-8-sig",
+   "date_parse": "56/56",
+   "extra_cols": []
+  },
+  "전북특별자치도_진안군_평생학습강좌": {
+   "rows": 15,
+   "encoding": "utf-8-sig",
+   "date_parse": "60/60",
+   "extra_cols": []
+  },
+  "전북특별자치도교육청_평생학습강좌": {
+   "rows": 434,
+   "encoding": "utf-8-sig",
+   "date_parse": "1736/1736",
+   "extra_cols": []
+  },
+  "제주특별자치도교육청_평생학습강좌": {
+   "rows": 26,
+   "encoding": "utf-8-sig",
+   "date_parse": "104/104",
+   "extra_cols": []
+  },
+  "충청남도_금산군_평생학습강좌": {
+   "rows": 96,
+   "encoding": "utf-8-sig",
+   "date_parse": "384/384",
+   "extra_cols": []
+  },
+  "충청남도_논산시_평생학습강좌": {
+   "rows": 38,
+   "encoding": "utf-8-sig",
+   "date_parse": "152/152",
+   "extra_cols": []
+  },
+  "충청남도_당진시_평생학습강좌": {
+   "rows": 59,
+   "encoding": "utf-8-sig",
+   "date_parse": "236/236",
+   "extra_cols": []
+  },
+  "충청남도_보령시_평생학습강좌": {
+   "rows": 86,
+   "encoding": "utf-8-sig",
+   "date_parse": "288/288",
+   "extra_cols": []
+  },
+  "충청남도_부여군_평생학습강좌": {
+   "rows": 41,
+   "encoding": "utf-8-sig",
+   "date_parse": "164/164",
+   "extra_cols": []
+  },
+  "충청남도_서산시_평생학습강좌": {
+   "rows": 56,
+   "encoding": "utf-8-sig",
+   "date_parse": "224/224",
+   "extra_cols": []
+  },
+  "충청남도_천안시_평생학습강좌": {
+   "rows": 96,
+   "encoding": "utf-8-sig",
+   "date_parse": "192/192",
+   "extra_cols": []
+  },
+  "충청남도_청양군_평생학습강좌": {
+   "rows": 79,
+   "encoding": "utf-8-sig",
+   "date_parse": "316/316",
+   "extra_cols": []
+  },
+  "충청남도_홍성군_평생학습강좌": {
+   "rows": 76,
+   "encoding": "utf-8-sig",
+   "date_parse": "304/304",
+   "extra_cols": []
+  },
+  "충청남도교육청_충청남도서천교육지원청_평생학습강좌": {
+   "rows": 29,
+   "encoding": "utf-8-sig",
+   "date_parse": "116/116",
+   "extra_cols": []
+  },
+  "충청북도_옥천군_평생학습강좌": {
+   "rows": 12,
+   "encoding": "utf-8-sig",
+   "date_parse": "48/48",
+   "extra_cols": []
+  },
+  "충청북도_제천시_평생학습강좌": {
+   "rows": 18,
+   "encoding": "utf-8-sig",
+   "date_parse": "72/72",
+   "extra_cols": []
+  },
+  "충청북도_진천군_평생학습강좌": {
+   "rows": 12,
+   "encoding": "utf-8-sig",
+   "date_parse": "48/48",
+   "extra_cols": []
+  },
+  "충청북도_청주시_평생학습강좌": {
+   "rows": 78,
+   "encoding": "utf-8-sig",
+   "date_parse": "312/312",
+   "extra_cols": []
+  },
+  "충청북도_충주시_평생학습강좌": {
+   "rows": 101,
+   "encoding": "utf-8-sig",
+   "date_parse": "404/404",
+   "extra_cols": []
+  },
+  "충청북도교육청_충청북도교육도서관_평생학습강좌": {
+   "rows": 32,
+   "encoding": "utf-8-sig",
+   "date_parse": "128/128",
+   "extra_cols": []
+  },
+  "충청북도교육청_충청북도중원교육문화원_평생학습강좌": {
+   "rows": 23,
+   "encoding": "utf-8-sig",
+   "date_parse": "92/92",
+   "extra_cols": []
+  }
+ },
+ "totals": {
+  "files": 205,
+  "rows": 15752,
+  "date_parse_rate": 1.0,
+  "null_rates": {
+   "강좌명": 0.0,
+   "운영기관명": 0.0,
+   "운영요일": 0.0492,
+   "교육시작시각": 0.1011,
+   "접수시작일자": 0.1316,
+   "접수종료일자": 0.134,
+   "수강료": 0.0
+  },
+  "status_snapshot": {
+   "마감": 12274,
+   "미상": 2110,
+   "접수중": 86,
+   "예정": 99,
+   "상시": 1183
+  },
+  "data_basis_range": [
+   "2026-01-22",
+   "2026-07-01"
+  ]
+ }
+}

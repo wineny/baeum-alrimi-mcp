@@ -8,7 +8,7 @@
 import os
 import re
 import sqlite3
-from datetime import date, datetime
+from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
 

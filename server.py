@@ -183,10 +183,15 @@ def search_courses(
             params["bucket"] = tr
             where.append("시간대_버킷 = :bucket")
         else:
-            m = re.match(r"^(\d{1,2}:\d{2})\s*[-~]\s*(\d{1,2}:\d{2})$", tr)
-            if m:
-                params["t1"], params["t2"] = m.group(1).zfill(5), m.group(2).zfill(5)
-                where.append("교육시작시각 >= :t1 AND 교육시작시각 <= :t2")
+            # 'HH:MM-HH:MM' + 열린 범위 'HH:MM-' / '-HH:MM' (LLM이 실전에서 생성하는 포맷)
+            m = re.match(r"^(\d{1,2}:\d{2})?\s*[-~]\s*(\d{1,2}:\d{2})?$", tr)
+            if m and (m.group(1) or m.group(2)):
+                if m.group(1):
+                    params["t1"] = m.group(1).zfill(5)
+                    where.append("교육시작시각 >= :t1")
+                if m.group(2):
+                    params["t2"] = m.group(2).zfill(5)
+                    where.append("교육시작시각 <= :t2")
     if target:
         params["target"] = f"%{target.strip()}%"
         where.append("교육대상구분 LIKE :target")

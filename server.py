@@ -163,13 +163,22 @@ def normalize_weekdays(weekday: list[str] | None) -> tuple[list[str], list[str]]
 
 
 def region_clause(region: str | None, params: dict[str, Any]) -> str:
+    """지역 필터 — 공백 토큰별 AND 매칭.
+
+    LLM이 '서울 강북구'처럼 시도+시군구를 한 문자열로 보내는 사례 관측(스팟체크):
+    단일 LIKE로는 시도='서울특별시'/시군구='강북구'로 나뉜 데이터에 매치 불가.
+    """
     if not region:
         return ""
-    params["region"] = like(region)
-    return (
-        f" AND (시도 LIKE :region{ESC} OR 시군구 LIKE :region{ESC}"
-        f" OR 교육장도로명주소 LIKE :region{ESC} OR 교육장소 LIKE :region{ESC})"
-    )
+    clauses = []
+    for i, tok in enumerate(t for t in region.split() if t):
+        key = f"region{i}"
+        params[key] = like(tok)
+        clauses.append(
+            f"(시도 LIKE :{key}{ESC} OR 시군구 LIKE :{key}{ESC}"
+            f" OR 교육장도로명주소 LIKE :{key}{ESC} OR 교육장소 LIKE :{key}{ESC})"
+        )
+    return " AND " + " AND ".join(clauses)
 
 
 def fee_label(row: sqlite3.Row) -> str:
@@ -374,8 +383,13 @@ def get_enrollment_calendar(
     p_params: dict[str, Any] = {"today": today, "horizon": f"+{horizon} days"}
     p_where = ""
     if region:
-        p_params["region"] = like(region)
-        p_where += f" AND (시도 LIKE :region{ESC} OR 시군구 LIKE :region{ESC} OR 기관 LIKE :region{ESC})"
+        for i, tok in enumerate(t for t in region.split() if t):
+            key = f"region{i}"
+            p_params[key] = like(tok)
+            p_where += (
+                f" AND (시도 LIKE :{key}{ESC} OR 시군구 LIKE :{key}{ESC}"
+                f" OR 기관 LIKE :{key}{ESC})"
+            )
     if center_name:
         p_params["center"] = like(center_name)
         p_where += f" AND 기관 LIKE :center{ESC}"

@@ -50,7 +50,8 @@ def mutate(tool: str, args: dict[str, Any]) -> list[Variant]:
         for wd in (["금~월"], ["주말"], ["weekend"], ["월~수", "금"]):
             _v(out, "M3", 1, tool, {**args, "weekday": wd},
                f"weekday 비정형 {wd}", dropped="weekday")
-        for rg in ("강남 근처", "서울시 강남구청 옆"):
+        # '서울 강북구' 복합 지역명: 확인 스팟체크 실측 패턴(7/4) — 토큰 AND 매칭 회귀 잠금
+        for rg in ("강남 근처", "서울시 강남구청 옆", "서울 강북구", "서울특별시 강남구"):
             _v(out, "M3", 1, tool, {**args, "region": rg},
                f"region 비정형 '{rg}'", dropped="region")
         for kw in ("%", "_", "100%할인", "C++", "요가%"):

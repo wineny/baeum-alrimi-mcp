@@ -198,17 +198,23 @@ def test_perf() -> None:
 
 
 def test_24kb() -> None:
+    # 24KB·푸터 판정 규칙의 SSOT는 tests/persona_qa/invariants.py — 여기서 import해 공유
+    from tests.persona_qa import invariants as inv
+
     huge = "가나다라마바사아자차" * 10000
     out = server.finalize(huge)
-    assert len(out.encode("utf-8")) <= 24 * 1024
+    inv.assert_24kb(out)
+    inv.assert_footer(out)
     assert "생략" in out and "데이터 기준일" in out
     wide = server.search_courses(
         status=["접수중", "예정", "상시", "마감", "미상"], page=1
     )
-    assert len(wide.encode("utf-8")) <= 24 * 1024
+    inv.assert_24kb(wide)
+    inv.assert_footer(wide)
     cal = server.get_enrollment_calendar(region="경기도", months_ahead=6)
-    assert len(cal.encode("utf-8")) <= 24 * 1024
-    print("AC4 24KB 상한 (finalize 절단 + 광역 질의): PASS")
+    inv.assert_24kb(cal)
+    inv.assert_footer(cal)
+    print("AC4 24KB 상한 (finalize 절단 + 광역 질의, invariants SSOT): PASS")
 
 
 def main() -> int:

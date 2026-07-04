@@ -6,3 +6,4 @@ data/raw/
 data/raw_facilities/
 data/download_failures.json
 data/facility_download_failures.json
+tests/persona_qa/report.md

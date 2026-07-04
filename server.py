@@ -22,6 +22,16 @@ MAX_BYTES = 23 * 1024  # 규정 24KB에 안전 마진
 PAGE_SIZE = 8
 WEEKDAYS = "월화수목금토일"
 EN_DAYS = {"mon": "월", "tue": "화", "wed": "수", "thu": "목", "fri": "금", "sat": "토", "sun": "일"}
+# 실전에서 LLM이 요일·시간대를 별칭/한국어로 보내는 사례 관측 → alias 수용
+WEEKDAY_ALIASES = {
+    "주말": "토일", "weekend": "토일",
+    "평일": "월화수목금", "주중": "월화수목금", "weekday": "월화수목금", "weekdays": "월화수목금",
+}
+TIME_BUCKETS = {
+    "morning": "morning", "오전": "morning", "아침": "morning",
+    "afternoon": "afternoon", "오후": "afternoon", "낮": "afternoon",
+    "evening": "evening", "저녁": "evening", "밤": "evening", "night": "evening", "야간": "evening",
+}
 STATUS_VALUES = ("접수중", "예정", "상시", "마감", "미상")
 DEFAULT_STATUS = ["접수중", "예정", "상시"]
 # 실전에서 LLM이 영문 enum을 보내는 사례 관측(PlayMCP AI채팅) → alias 수용
@@ -107,14 +117,49 @@ def like(term: str) -> str:
 ESC = " ESCAPE '\\'"
 
 
-def normalize_weekdays(weekday: list[str] | None) -> list[str]:
-    out = []
-    for w in weekday or []:
-        w = w.strip().lower()
-        d = EN_DAYS.get(w[:3], w[:1])
-        if d in WEEKDAYS and d not in out:
-            out.append(d)
-    return out
+def _weekday_of(token: str) -> str | None:
+    t = token.strip().lower()
+    if not t:
+        return None
+    d = EN_DAYS.get(t[:3], t[:1])
+    return d if d in WEEKDAYS else None
+
+
+def normalize_weekdays(weekday: list[str] | None) -> tuple[list[str], list[str]]:
+    """요일 인자 정규화 → (인식된 요일, 인식 실패 토큰).
+
+    별칭('주말'·'평일')과 범위('월~금', 'mon-fri')를 지원하고,
+    역순 범위('금~월')는 데이터 수집기와 동일하게 순환 해석한다.
+    """
+    out: list[str] = []
+    bad: list[str] = []
+
+    def add(day: str) -> None:
+        if day not in out:
+            out.append(day)
+
+    for raw in weekday or []:
+        w = str(raw).strip().lower()
+        if w in WEEKDAY_ALIASES:
+            for day in WEEKDAY_ALIASES[w]:
+                add(day)
+            continue
+        m = re.match(r"^(.+?)\s*[~\-]\s*(.+)$", w)
+        if m:
+            d1, d2 = _weekday_of(m.group(1)), _weekday_of(m.group(2))
+            if d1 and d2:
+                k, end = WEEKDAYS.index(d1), WEEKDAYS.index(d2)
+                add(WEEKDAYS[k])
+                while k != end:
+                    k = (k + 1) % 7
+                    add(WEEKDAYS[k])
+                continue
+        d = _weekday_of(w)
+        if d:
+            add(d)
+        else:
+            bad.append(str(raw))
+    return out, bad
 
 
 def region_clause(region: str | None, params: dict[str, Any]) -> str:
@@ -179,7 +224,10 @@ def search_courses(
         params["kw"] = like(keyword)
         where.append(f"(강좌명 LIKE :kw{ESC} OR 강좌내용 LIKE :kw{ESC} OR 교육장소 LIKE :kw{ESC})")
     where.append(region_clause(region, params).replace(" AND ", "", 1) or "1=1")
-    days = normalize_weekdays(weekday)
+    ignored: list[str] = []
+    days, bad_days = normalize_weekdays(weekday)
+    if bad_days:
+        ignored.append(f"weekday {bad_days} → 예: '월'~'일', '주말', '금~월'")
     if days:
         bits = 0
         for d in days:
@@ -188,19 +236,33 @@ def search_courses(
         where.append("(요일_비트 & :bits) != 0")
     if time_range:
         tr = time_range.strip().lower()
-        if tr in ("morning", "afternoon", "evening"):
-            params["bucket"] = tr
+        m = re.match(r"^(\d{1,2}:\d{2})?\s*[-~]\s*(\d{1,2}:\d{2})?$", tr)
+        ko = re.match(r"^(오전|오후|저녁|밤)?\s*(\d{1,2})\s*시\s*(반)?\s*(이후|부터|이전|까지)?$", tr)
+        if tr in TIME_BUCKETS:
+            params["bucket"] = TIME_BUCKETS[tr]
             where.append("시간대_버킷 = :bucket")
-        else:
+        elif m and (m.group(1) or m.group(2)):
             # 'HH:MM-HH:MM' + 열린 범위 'HH:MM-' / '-HH:MM' (LLM이 실전에서 생성하는 포맷)
-            m = re.match(r"^(\d{1,2}:\d{2})?\s*[-~]\s*(\d{1,2}:\d{2})?$", tr)
-            if m and (m.group(1) or m.group(2)):
-                if m.group(1):
-                    params["t1"] = m.group(1).zfill(5)
-                    where.append("교육시작시각 >= :t1")
-                if m.group(2):
-                    params["t2"] = m.group(2).zfill(5)
-                    where.append("교육시작시각 <= :t2")
+            if m.group(1):
+                params["t1"] = m.group(1).zfill(5)
+                where.append("교육시작시각 >= :t1")
+            if m.group(2):
+                params["t2"] = m.group(2).zfill(5)
+                where.append("교육시작시각 <= :t2")
+        elif ko:
+            # '오후7시', '저녁 7시 이후', '9시 반 까지' 등 한국어 시각 표현
+            hour = int(ko.group(2)) % 24
+            if ko.group(1) in ("오후", "저녁", "밤") and hour < 12:
+                hour += 12
+            hhmm = f"{hour:02d}:{'30' if ko.group(3) else '00'}"
+            if ko.group(4) in ("이전", "까지"):
+                params["t2"] = hhmm
+                where.append("교육시작시각 <= :t2")
+            else:  # '이후'·'부터'·무지정 = 해당 시각부터
+                params["t1"] = hhmm
+                where.append("교육시작시각 >= :t1")
+        else:
+            ignored.append(f"time_range '{time_range}' → 예: '오전', '19:00-', '10:00-12:00'")
     if target:
         params["target"] = like(target)
         where.append(f"교육대상구분 LIKE :target{ESC}")
@@ -238,10 +300,15 @@ def search_courses(
     rows = con.execute(sql, params).fetchall()
     con.close()
 
+    notice = (
+        "\n\n※ 인식하지 못해 적용하지 않은 필터 — " + " · ".join(ignored)
+        if ignored else ""
+    )
     if not rows:
         return finalize(
             "조건에 맞는 강좌가 없습니다. 필터를 넓혀 보세요"
             " (예: status에 '마감' 포함, 지역 넓히기, get_filter_options로 유효값 확인)."
+            + notice
         )
     head = (
         f"### 강좌 검색 결과 {total}건 (페이지 {page}, {len(rows)}건 표시,"
@@ -251,7 +318,7 @@ def search_courses(
     more = (
         f"\n\n다음 페이지: page={page + 1}" if total > page * PAGE_SIZE else ""
     )
-    return finalize(head + cards + more)
+    return finalize(head + cards + more + notice)
 
 
 @mcp.tool(
@@ -270,7 +337,10 @@ def get_enrollment_calendar(
     months_ahead: int = 2,
 ) -> str:
     if not region and not center_name:
-        return finalize("region 또는 center_name 중 하나는 필요합니다.")
+        return finalize(
+            "region 또는 center_name 중 하나는 필요합니다."
+            " get_filter_options로 유효한 지역명을 확인할 수 있습니다."
+        )
     today = today_kst()
     horizon = min(max(months_ahead, 1), 6) * 31
     params: dict[str, Any] = {"today": today, "horizon": f"+{horizon} days"}
@@ -422,7 +492,10 @@ def list_courses_by_center(
     center_name: str | None = None, region: str | None = None, page: int = 1
 ) -> str:
     if not center_name and not region:
-        return finalize("center_name 또는 region 중 하나는 필요합니다.")
+        return finalize(
+            "center_name 또는 region 중 하나는 필요합니다."
+            " get_filter_options로 유효한 지역명을 확인할 수 있습니다."
+        )
     today = today_kst()
     con = db()
     if not center_name:
@@ -437,7 +510,10 @@ def list_courses_by_center(
         ).fetchall()
         con.close()
         if not rows:
-            return finalize(f"'{region}' 지역의 기관을 찾지 못했습니다.")
+            return finalize(
+                f"'{region}' 지역의 기관을 찾지 못했습니다."
+                " get_filter_options로 유효한 지역명을 확인하거나 지역을 넓혀 보세요."
+            )
         parts = [f"### '{region}' 지역 운영기관 (기준일 {today})"]
         parts.extend(
             f"- **{r['운영기관명']}** ({r['시도']} {r['시군구']})".rstrip()
@@ -463,7 +539,16 @@ def list_courses_by_center(
     ).fetchall()
     con.close()
     if not rows:
-        return finalize(f"'{center_name}' 기관의 강좌를 찾지 못했습니다.")
+        if total:
+            last = (total + PAGE_SIZE - 1) // PAGE_SIZE
+            return finalize(
+                f"페이지 {page}에는 표시할 강좌가 없습니다."
+                f" '{center_name}' 강좌는 전체 {total}건 — 다른 페이지(1~{last})를 사용하세요."
+            )
+        return finalize(
+            f"'{center_name}' 기관의 강좌를 찾지 못했습니다."
+            " 기관명을 줄이거나 다른 이름으로 검색하고, region으로 지역 기관 목록을 확인해 보세요."
+        )
     info = rows[0]
     head = (
         f"### {info['운영기관명']} 강좌 {total}건 (페이지 {page}, 기준일 {today})\n"
@@ -520,8 +605,11 @@ def get_filter_options(region: str | None = None) -> str:
             f"{r[0]}({r[1]}/{r[2]})" for r in rows
         ))
     parts.append("**교육대상구분**: " + ", ".join(f"{t[0]}({t[1]})" for t in targets))
-    parts.append("**weekday**: 월, 화, 수, 목, 금, 토, 일 (배열)")
-    parts.append("**time_range**: morning(~12시) | afternoon(12~18시) | evening(18시~) | 'HH:MM-HH:MM'")
+    parts.append("**weekday**: 월, 화, 수, 목, 금, 토, 일 (배열) · '주말'/'평일'/'금~월'(범위)도 지원")
+    parts.append(
+        "**time_range**: 오전/오후/저녁 (또는 morning/afternoon/evening)"
+        " | 'HH:MM-HH:MM' | 열린 범위 '19:00-'/'-12:00' | '오후7시'/'저녁 7시 이후'"
+    )
     parts.append(f"**status**: {', '.join(STATUS_VALUES)} (기본: 접수중, 예정, 상시)")
     parts.append("**sort**: deadline(마감임박) | fee(수강료) | start_date(개강일)")
     return finalize("\n".join(parts))

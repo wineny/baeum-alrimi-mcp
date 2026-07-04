@@ -204,6 +204,8 @@ def course_card(row: sqlite3.Row, status: str) -> str:
         " IMPORTANT: if the user has not specified a region (시/도 or 시/군/구),"
         " ask which region they are in BEFORE searching — nationwide results are"
         " rarely what the user wants."
+        " Build filters ONLY from the user's current message: do NOT carry over"
+        " time_range/weekday/region from earlier turns unless the user restates them."
         " Default shows courses currently open, upcoming, or always-open."
         " sort: deadline | fee | start_date. Returns course cards with course IDs"
         " usable in compare_courses / get_course_detail."

@@ -75,6 +75,11 @@ def run_path1(qid: str, case: str, tool: str, args: dict[str, Any],
     r.violations = inv.violations(text, tool)
     if "INV-NO-HALLUCINATION" in r.violations:
         r.detail = f"없는 ID: {inv.hallucinated_ids(text)}"
+    # INV-REGION-NOTICE (SHOULD): 지역 미지정 검색 결과에는 지역 확인 유도가 있어야 함
+    # (스팟체크 실측: 무지역 광역 질의가 특정 기관 독점 결과로 이어짐 — 2026-07-04)
+    if (tool == "search_courses" and not args.get("region")
+            and inv.card_ids(text) and "지역" not in text):
+        r.violations.append("INV-REGION-NOTICE")
     # INV-SILENT-DROP 차등 검사 (SHOULD·경고): 필터 제거본과 결과가 동일하고
     # 인식 실패 안내도 없으면 플래그. 정렬 탓에 1페이지 카드가 우연히 겹칠 수 있어
     # 총 건수 헤더까지 비교하고, 0건(구분 불가·INV-EMPTY-QUALITY 소관)은 제외한다.

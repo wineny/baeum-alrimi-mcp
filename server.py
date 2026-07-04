@@ -201,6 +201,9 @@ def course_card(row: sqlite3.Row, status: str) -> str:
         "Search nationwide Korean lifelong-learning courses with combined filters"
         " (keyword, region, weekday, time of day, target audience, free-only,"
         " enrollment status) from " + SERVICE_NAME + "."
+        " IMPORTANT: if the user has not specified a region (시/도 or 시/군/구),"
+        " ask which region they are in BEFORE searching — nationwide results are"
+        " rarely what the user wants."
         " Default shows courses currently open, upcoming, or always-open."
         " sort: deadline | fee | start_date. Returns course cards with course IDs"
         " usable in compare_courses / get_course_detail."
@@ -304,6 +307,11 @@ def search_courses(
         "\n\n※ 인식하지 못해 적용하지 않은 필터 — " + " · ".join(ignored)
         if ignored else ""
     )
+    if not region and rows:
+        notice += (
+            "\n\n※ 지역 미지정 — 전국 기준 결과라 특정 지역·기관에 치우칠 수 있습니다."
+            " 사용자에게 지역(시/군/구)을 물어봐 region으로 좁혀 주세요."
+        )
     if not rows:
         return finalize(
             "조건에 맞는 강좌가 없습니다. 필터를 넓혀 보세요"

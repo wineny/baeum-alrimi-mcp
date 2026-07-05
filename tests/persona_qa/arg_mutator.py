@@ -40,6 +40,10 @@ def mutate(tool: str, args: dict[str, Any]) -> list[Variant]:
         _v(out, "M1", 2, tool, {**args, "status": "open"}, "status를 list 아닌 str로")
         # M2 — 없는 enum
         _v(out, "M2", 1, tool, {**args, "status": ["D-day", "active"]}, "정의 안 된 status 값")
+        # 'always-open' 하이픈 변형: S9 실LLM 실측(7/5) — 상시 탈락으로 거짓 0건이던 결함 회귀 잠금
+        _v(out, "M2", 1, tool, {**args, "status": ["open", "upcoming", "always-open"]},
+           "status 구분자 변형(hyphen)")
+        _v(out, "M2", 1, tool, {**args, "status": ["Always Open"]}, "status 공백+대문자 변형")
         _v(out, "M2", 1, tool, {**args, "sort": "cheapest"}, "정의 안 된 sort 값")
         _v(out, "M2", 1, tool, {**args, "target": "kids"}, "영문 target")
         _v(out, "M2", 1, tool, {**args, "time_range": "night"}, "영문 time_range 버킷")

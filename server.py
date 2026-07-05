@@ -286,10 +286,21 @@ def search_courses(
     if free_only:
         where.append("무료여부 = 1")
     statuses = []
+    bad_status = []
     for s in status or DEFAULT_STATUS:
-        s = STATUS_ALIASES.get(s.strip().lower(), s.strip())
-        if s in STATUS_VALUES and s not in statuses:
-            statuses.append(s)
+        # 'always-open'/'Always Open' 등 구분자 변형 관측(실LLM) → 언더스코어로 통일 후 alias 조회
+        key = s.strip().lower().replace("-", "_").replace(" ", "_")
+        norm = STATUS_ALIASES.get(key, s.strip())
+        if norm in STATUS_VALUES:
+            if norm not in statuses:
+                statuses.append(norm)
+        else:
+            bad_status.append(s)
+    if bad_status and status:
+        ignored.append(
+            f"status {bad_status} → 예: {', '.join(STATUS_VALUES)}"
+            " (또는 open/upcoming/always_open/closed)"
+        )
     if not statuses:
         statuses = DEFAULT_STATUS
     where.append(f"({STATUS_SQL}) IN ({','.join(repr(s) for s in statuses)})")

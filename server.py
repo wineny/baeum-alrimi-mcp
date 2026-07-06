@@ -189,18 +189,24 @@ def fee_label(row: sqlite3.Row) -> str:
     return row["수강료_원문"] or "미상"
 
 
-def course_card(row: sqlite3.Row, status: str) -> str:
+def course_card(row: sqlite3.Row, status: str, mark_status: bool = False) -> str:
     days = row["요일_정규화"] or "요일 미상"
     time_s = f"{row['교육시작시각'] or '?'}~{row['교육종료시각'] or '?'}"
     recv = (
         f"{row['접수시작일자'] or '?'}~{row['접수종료일자'] or '?'}"
         if status != "상시" else "상시접수"
     )
+    # mark_status: 폴백 카드용 선두 상태 마커. [id]가 반드시 첫 토큰이어야
+    # 하네스 CARD_ID_RE(`^- \*\*\[(\d+)\]`) 앵커와 정합 — 순서 변경 금지.
+    title = (
+        f"- **[{row['id']}] [{status}] {row['강좌명']}**\n" if mark_status
+        else f"- **[{row['id']}] {row['강좌명']}** ({status})\n"
+    )
     return (
-        f"- **[{row['id']}] {row['강좌명']}** ({status})\n"
-        f"  - {row['운영기관명']} · {row['시도']} {row['시군구']}".rstrip() + "\n"
-        f"  - {days} {time_s} · {fee_label(row)} · 대상 {row['교육대상구분'] or '미상'}\n"
-        f"  - 교육 {row['교육시작일자']}~{row['교육종료일자']} · 접수 {recv}"
+        title
+        + f"  - {row['운영기관명']} · {row['시도']} {row['시군구']}".rstrip() + "\n"
+        + f"  - {days} {time_s} · {fee_label(row)} · 대상 {row['교육대상구분'] or '미상'}\n"
+        + f"  - 교육 {row['교육시작일자']}~{row['교육종료일자']} · 접수 {recv}"
     )
 
 
@@ -303,7 +309,8 @@ def search_courses(
         )
     if not statuses:
         statuses = DEFAULT_STATUS
-    where.append(f"({STATUS_SQL}) IN ({','.join(repr(s) for s in statuses)})")
+    # status 절은 where와 분리 — 빈 결과 폴백이 status 절만 교체해 재조회한다
+    status_clause = f"({STATUS_SQL}) IN ({','.join(repr(s) for s in statuses)})"
 
     order = {
         "deadline": "CASE WHEN 접수종료일자 IS NULL THEN 1 ELSE 0 END, 접수종료일자 ASC",
@@ -314,19 +321,20 @@ def search_courses(
     page = max(1, page)
     params["limit"] = PAGE_SIZE
     params["offset"] = (page - 1) * PAGE_SIZE
-    sql = (
-        f"SELECT *, {STATUS_SQL} AS 접수상태 FROM courses"
-        f" WHERE {' AND '.join(w for w in where if w != '1=1') or '1=1'}"
-        f" ORDER BY {order} LIMIT :limit OFFSET :offset"
-    )
-    count_sql = (
-        f"SELECT COUNT(*) FROM courses"
-        f" WHERE {' AND '.join(w for w in where if w != '1=1') or '1=1'}"
-    )
-    con = db()
-    total = con.execute(count_sql, params).fetchone()[0]
-    rows = con.execute(sql, params).fetchall()
-    con.close()
+
+    def run_query(clauses: list[str], order_by: str) -> tuple[int, list[sqlite3.Row]]:
+        cond = " AND ".join(w for w in clauses if w != "1=1") or "1=1"
+        con = db()
+        n = con.execute(f"SELECT COUNT(*) FROM courses WHERE {cond}", params).fetchone()[0]
+        rs = con.execute(
+            f"SELECT *, {STATUS_SQL} AS 접수상태 FROM courses WHERE {cond}"
+            f" ORDER BY {order_by} LIMIT :limit OFFSET :offset",
+            params,
+        ).fetchall()
+        con.close()
+        return n, rs
+
+    total, rows = run_query(where + [status_clause], order)
 
     notice = (
         "\n\n※ 인식하지 못해 적용하지 않은 필터 — " + " · ".join(ignored)
@@ -338,6 +346,43 @@ def search_courses(
             " 사용자에게 지역(시/군/구)을 물어봐 region으로 좁혀 주세요."
         )
     if not rows:
+        # 2-tier 빈 결과 폴백: LLM이 status를 안 보낸 기본 검색이 정확히 0건일 때만.
+        # total==0 게이트라 딥 페이지네이션(총건수>0, offset 초과)에서는 발동하지 않고,
+        # 명시 status는 계약 존중을 위해 폴백하지 않는다. tier가 단일 status라 라벨은 항상 참.
+        if not status and total == 0:
+            for fb_status, fb_order, fb_label in (
+                ("마감",
+                 "CASE WHEN 접수종료일자 IS NULL THEN 1 ELSE 0 END, 접수종료일자 DESC",
+                 "아래는 모두 접수가 마감된 과거 운영 이력입니다 — 재개설되는 경우가"
+                 " 많으니 get_enrollment_calendar로 다음 접수 예상을 확인해 보세요."),
+                ("미상",
+                 "CASE WHEN 교육시작일자 IS NULL THEN 1 ELSE 0 END, 교육시작일자 DESC",
+                 "아래는 접수 기간이 명시되지 않은 강좌입니다 — 신청 가능 여부는"
+                 " 운영기관에 문의해 보세요."),
+            ):
+                fb_total, fb_rows = run_query(
+                    where + [f"({STATUS_SQL}) = '{fb_status}'"], fb_order
+                )
+                if fb_rows:
+                    # 헤더에 '결과' 단어 금지 — acceptance/edge 건수 오라클 정규식 회피
+                    head = (
+                        f"### [범위 확장] 과거 운영 이력 {fb_total}건"
+                        f" (페이지 {page}, {len(fb_rows)}건 표시, 기준일 {today})\n"
+                    )
+                    cards = "\n".join(
+                        course_card(r, r["접수상태"], mark_status=True) for r in fb_rows
+                    )
+                    more = (
+                        f"\n\n다음 페이지: page={page + 1}"
+                        if fb_total > page * PAGE_SIZE else ""
+                    )
+                    label = (
+                        "\n\n※ 지금 접수 가능(접수중·예정·상시)한 강좌는 0건입니다. "
+                        + fb_label
+                    )
+                    if not region:
+                        label += " (지역을 지정하면 더 정확해집니다.)"
+                    return finalize(head + cards + more + label + notice)
         return finalize(
             "조건에 맞는 강좌가 없습니다. 필터를 넓혀 보세요"
             " (예: status에 '마감' 포함, 지역 넓히기, get_filter_options로 유효값 확인)."

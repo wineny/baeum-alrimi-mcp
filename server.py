@@ -218,6 +218,22 @@ def normalize_weekdays(weekday: list[str] | None) -> tuple[list[str], list[str]]
     return out, bad
 
 
+# 로마자 지역명 → 한글 정규화. 실LLM이 'region: Seoul'처럼 영문을 보내는 사례
+# 관측(persona QA P5-3: Seoul이 무매치 → 3턴 막다른 궤적). 시도 + 고빈도 구 수준만.
+REGION_EN = {
+    "seoul": "서울", "busan": "부산", "incheon": "인천", "daegu": "대구",
+    "gwangju": "광주", "daejeon": "대전", "ulsan": "울산", "sejong": "세종",
+    "jeju": "제주", "gyeonggi": "경기", "gangwon": "강원", "chungbuk": "충북",
+    "chungnam": "충남", "jeonbuk": "전북", "jeonnam": "전남", "gyeongbuk": "경북",
+    "gyeongnam": "경남", "gangnam": "강남구", "gangbuk": "강북구",
+}
+
+
+def region_tokens(region: str) -> list[str]:
+    """지역 문자열 → 정규화 토큰 목록 (영문 로마자 별칭 해소)."""
+    return [REGION_EN.get(t.lower(), t) for t in region.split() if t]
+
+
 def region_clause(region: str | None, params: dict[str, Any]) -> str:
     """지역 필터 — 공백 토큰별 AND 매칭.
 
@@ -233,7 +249,7 @@ def region_clause(region: str | None, params: dict[str, Any]) -> str:
     if not region:
         return ""
     clauses = []
-    for i, tok in enumerate(t for t in region.split() if t):
+    for i, tok in enumerate(region_tokens(region)):
         key = f"region{i}"
         params[key] = like(tok)
         clauses.append(
@@ -260,7 +276,7 @@ def broaden_region(region: str) -> str | None:
     해당 시군구가 속한 시도를 최빈값으로 조회한다. 이미 시도명이거나
     미존재 지역이면 None — 미존재 지역의 '없습니다' 안내는 기존 경로 유지.
     """
-    tokens = [t for t in region.split() if t]
+    tokens = region_tokens(region)
     if not tokens:
         return None
     if len(tokens) > 1:
@@ -389,6 +405,8 @@ def search_courses(
     today = today_kst()
     params: dict[str, Any] = {"today": today}
     where = ["1=1"]
+    # 필터 완화 힌트(0건 최종 분기)용 인자별 where 인덱스 태깅
+    filter_idx: dict[str, list[int]] = {}
     kw_terms: list[str] = expand_keyword(keyword) if keyword else []
     if kw_terms:
         kw_parts = []
@@ -399,6 +417,7 @@ def search_courses(
                 f"강좌명 LIKE :{k}{ESC} OR 강좌내용 LIKE :{k}{ESC} OR 교육장소 LIKE :{k}{ESC}"
             )
         where.append("(" + " OR ".join(kw_parts) + ")")
+        filter_idx["keyword"] = [len(where) - 1]
     where.append(region_clause(region, params).replace(" AND ", "", 1) or "1=1")
     region_idx = len(where) - 1  # 지역 확장 폴백이 이 절만 교체해 재조회한다
     ignored: list[str] = []
@@ -411,7 +430,9 @@ def search_courses(
             bits |= 1 << WEEKDAYS.index(d)
         params["bits"] = bits
         where.append("(요일_비트 & :bits) != 0")
+        filter_idx["weekday"] = [len(where) - 1]
     if time_range:
+        _tr_start = len(where)
         tr = time_range.strip().lower()
         m = re.match(r"^(\d{1,2}:\d{2})?\s*[-~]\s*(\d{1,2}:\d{2})?$", tr)
         ko = re.match(r"^(오전|오후|저녁|밤)?\s*(\d{1,2})\s*시\s*(반)?\s*(이후|부터|이전|까지)?$", tr)
@@ -440,11 +461,14 @@ def search_courses(
                 where.append("교육시작시각 >= :t1")
         else:
             ignored.append(f"time_range '{time_range}' → 예: '오전', '19:00-', '10:00-12:00'")
+        if len(where) > _tr_start:
+            filter_idx["time_range"] = list(range(_tr_start, len(where)))
     if target:
         params["target"] = like(target)
         where.append(f"교육대상구분 LIKE :target{ESC}")
     if free_only:
         where.append("무료여부 = 1")
+        filter_idx["free_only"] = [len(where) - 1]
     statuses = []
     bad_status = []
     for s in status or DEFAULT_STATUS:
@@ -657,6 +681,30 @@ def search_courses(
                                 " keyword를 넓혀 보세요."
                             )
                             return finalize(head + label + notice)
+            # 필터 완화 힌트: 어떤 단일 필터를 빼면 강좌가 나오는지 실측 프로브
+            # (persona QA D13: 다필터 0건이 3턴 안에 수렴 못 하던 궤적).
+            # 인자명을 그대로 노출해 LLM이 해당 인자만 빼고 재검색하도록 유도.
+            # 이력 포함(전체 상태) 집계 — 재검색 시 폴백 tier가 카드를 보여준다.
+            for fname in ("free_only", "weekday", "time_range", "keyword"):
+                idxs = filter_idx.get(fname)
+                if not idxs:
+                    continue
+                probe_cond = " AND ".join(
+                    w for i, w in enumerate(where)
+                    if i not in idxs and w != "1=1"
+                ) or "1=1"
+                con = db()
+                probe_n = con.execute(
+                    f"SELECT COUNT(*) FROM courses WHERE {probe_cond}", params
+                ).fetchone()[0]
+                con.close()
+                if probe_n:
+                    return finalize(
+                        "조건에 맞는 강좌가 없습니다."
+                        f"\n\n※ {fname} 조건을 빼면 과거 이력 포함 {probe_n}건이"
+                        f" 있습니다 — {fname} 없이 같은 검색을 다시 실행해 보세요."
+                        + notice
+                    )
         return finalize(
             "조건에 맞는 강좌가 없습니다. 필터를 넓혀 보세요"
             " (예: status에 '마감' 포함, 지역 넓히기, get_filter_options로 유효값 확인)."
@@ -732,7 +780,7 @@ def get_enrollment_calendar(
     p_params: dict[str, Any] = {"today": today, "horizon": f"+{horizon} days"}
     p_where = ""
     if region:
-        for i, tok in enumerate(t for t in region.split() if t):
+        for i, tok in enumerate(region_tokens(region)):
             key = f"region{i}"
             p_params[key] = like(tok)
             p_where += (
@@ -863,7 +911,10 @@ def get_enrollment_calendar(
 )
 def compare_courses(course_ids: list[int]) -> str:
     if not 2 <= len(course_ids) <= 5:
-        return finalize("course_ids는 2~5개여야 합니다.")
+        return finalize(
+            "course_ids는 2~5개여야 합니다."
+            " search_courses로 강좌 ID를 2~5개 찾아 다시 시도해 주세요."
+        )
     today = today_kst()
     marks = ",".join("?" for _ in course_ids)
     con = db()

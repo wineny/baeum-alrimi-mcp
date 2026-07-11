@@ -10,7 +10,6 @@
   python3 tests/persona_qa/persona_loop.py
 """
 import asyncio
-import re
 import sys
 import traceback
 from dataclasses import dataclass, field
@@ -54,12 +53,8 @@ def call_direct(tool: str, args: dict[str, Any]) -> str:
     return fn(**args)
 
 
-_COUNT_RE = re.compile(r"결과 (\d+)건")
-
-
-def result_count(text: str) -> int | None:
-    m = _COUNT_RE.search(text)
-    return int(m.group(1)) if m else None
+# result_count SSOT는 invariants로 이전(dead-end 루프와 공용) — 재export 유지
+result_count = inv.result_count
 
 
 def run_path1(qid: str, case: str, tool: str, args: dict[str, Any],

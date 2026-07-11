@@ -23,6 +23,26 @@ CARD_ID_RE = re.compile(r"^- \*\*\[(\d+)\]", re.MULTILINE)
 PREDICTION_ENTRY_RE = re.compile(r"^- .*\(예상\)")
 CERTAINTY_RE = re.compile(r"확정(?!\s*아님)|보장(?!\s*하지)|반드시\s*열|틀림없|100%")
 
+# ── dead-end 오라클 앵커 (계획 dead-end-zero-loop v4 §추출 앵커 규약) ──
+# MUST 오라클(INV-DEAD-END)의 입력은 전부 고정 앵커 정규식 — 자유 텍스트 스캔 금지.
+# 숫자 앵커라 '☎ 번호 미상'/'☎ 미상'은 자동 제외된다(별도 필터 불필요).
+PHONE_RE = re.compile(r"☎\s*(\d[\d\-]+)")
+ISO_DATE_RE = re.compile(r"\d{4}-\d{2}-\d{2}")
+# org 앵커 2종: org_followup 라인(`- {기관}: 다음 오픈…/최근 접수 시작…`)과
+# 캘린더 ③ 문의처 라인(`- {기관} · ☎ …`). 카드의 기관은 들여쓴 하위 라인이라
+# 여기서 안 잡히며 card_ids/phones가 대리한다(novelty에 보수적 — 누락은 안전).
+ORG_FOLLOWUP_RE = re.compile(r"^- (.+?): (?:다음 오픈|최근 접수 시작)", re.MULTILINE)
+ORG_CONTACT_RE = re.compile(r"^- ([^:\n]+?) · ☎", re.MULTILINE)  # followup 라인(콜론 포함) 배제
+# tier3b [타지역 안내]가 제시하는 재호출 파라미터 (server.py: `region="{시도}"`)
+ALT_REGION_RE = re.compile(r'region="([^"]+)"')
+# 캘린더 등록 링크 라인 (C1) — SHOULD 참고치 전용, MUST 판정에 미사용
+CALENDAR_LINK_RE = re.compile(r"^  - 일정 추가: https://calendar\.google\.com/", re.MULTILINE)
+# compare_courses 성공 테이블 헤더(`| 항목 | [id] 강좌명 … |`)의 강좌 ID —
+# 비교표는 카드 앵커가 없지만 실질 강좌 콘텐츠를 전달한다(P4-3 오탐 QA).
+# INV-NO-HALLUCINATION의 card_ids()는 불변 — dead-end 오라클 전용 확장.
+TABLE_HEADER_ID_RE = re.compile(r"^\| 항목 \|.*", re.MULTILINE)
+_BRACKET_ID_RE = re.compile(r"\[(\d+)\]")
+
 MUST = ("INV-CRASH", "INV-24KB", "INV-FOOTER", "INV-PREDICTION",
         "INV-NO-HALLUCINATION", "INV-NO-BANNED")
 # 빈 결과 검사는 카드 목록형 응답에만 의미가 있다
@@ -44,6 +64,59 @@ def to_text(resp) -> str:
 
 def card_ids(text: str) -> list[int]:
     return [int(m) for m in CARD_ID_RE.findall(text)]
+
+
+# 성공 헤더('### 강좌 검색 결과 N건') 전용 카운트 파서 — persona_loop에서 이전(SSOT).
+# 주의: acceptance.py의 search_total(`강좌 검색 결과 (\d+)건`)은 골든셋 총건수 검증용
+# 별도 파서다 — 목적이 달라 병합하지 말 것. 폴백 헤더는 '결과' 단어를 규약상 피하므로
+# (server.py 폴백 헤더 주석) 이 파서는 폴백 응답에서 None을 반환하며, 폴백의 novelty는
+# card_ids로 측정한다.
+_COUNT_RE = re.compile(r"결과 (\d+)건")
+
+
+def result_count(text: str) -> int | None:
+    m = _COUNT_RE.search(text)
+    return int(m.group(1)) if m else None
+
+
+def response_content(text: str) -> dict:
+    """dead-end 오라클용 load-bearing 콘텐츠 추출 (계획 v4 단계 1).
+
+    novelty(진전) 측정의 입력 — 전부 고정 앵커 파싱. calendar_links는 SHOULD
+    참고치이고 alt_regions는 tier3b 재호출 파라미터(terminal 게이트 입력)다.
+    """
+    table_ids: set[int] = set()
+    for line in TABLE_HEADER_ID_RE.findall(text):
+        table_ids.update(int(m) for m in _BRACKET_ID_RE.findall(line))
+    return {
+        "card_ids": set(card_ids(text)) | table_ids,
+        "orgs": set(ORG_FOLLOWUP_RE.findall(text)) | set(ORG_CONTACT_RE.findall(text)),
+        "phones": set(PHONE_RE.findall(text)),
+        "predict_dates": {
+            d
+            for line in text.splitlines()
+            if PREDICTION_ENTRY_RE.match(line)
+            for d in ISO_DATE_RE.findall(line)
+        },
+        "expansion_open": ("[범위 확장]" in text) or ("[지역 확장]" in text),
+        "alt_regions": ALT_REGION_RE.findall(text) if "[타지역 안내]" in text else [],
+        "calendar_links": len(CALENDAR_LINK_RE.findall(text)),
+    }
+
+
+NOVELTY_KINDS = ("card_ids", "orgs", "phones", "predict_dates")
+
+
+def novelty(cur: dict, prev: dict | None) -> set[str]:
+    """cur가 prev 대비 새로 전달한 콘텐츠 종류 (집합 차집합).
+
+    전달된 콘텐츠(카드ID·org·유효전화·(예상)일자)에만 측정한다 — '잔여 완화
+    옵션'은 novelty 성분이 아니라 terminal 게이트 전용(계획 v4 필수수정 2:
+    완화옵션-as-novelty는 3턴 캡에서 stall을 무력화하는 거짓 음성 통로).
+    """
+    if prev is None:
+        return {k for k in NOVELTY_KINDS if cur[k]}
+    return {k for k in NOVELTY_KINDS if cur[k] - prev[k]}
 
 
 def assert_24kb(text: str) -> None:
@@ -75,10 +148,22 @@ def prediction_violations(text: str) -> list[str]:
 
 
 def empty_quality_ok(text: str) -> bool:
-    """0건 응답이 안내(없음 고지 + 대안 제시)를 갖추었는가."""
+    """0건 응답이 안내(없음 고지 + 대안 제시)를 갖추었는가 (SHOULD, 단일 판정식).
+
+    내부를 response_content 기반으로 재구성(계획 v4 단계 1) — load-bearing
+    대안(유효전화·예상일자·타지역 재호출 파라미터)이 있으면 문구와 무관하게
+    대안 충족, 없으면 기존 텍스트 포인터 검사로 폴백. 시그니처·SHOULD 심각도
+    불변. 이 함수는 응답 '문구 품질' 검사이며, 궤적 진전(MUST)은 novelty가 담당.
+    """
     notice = (("없습니다" in text) or ("찾지 못" in text) or ("없어요" in text)
               or ("없음" in text) or ("필요합니다" in text))
-    alternative = any(k in text for k in ("필터", "옵션", "다른", "좁히", "넓혀", "get_filter_options", "추천"))
+    rc = response_content(text)
+    alternative = (
+        bool(rc["phones"] or rc["predict_dates"] or rc["alt_regions"])
+        or "조건을 빼면" in text  # 필터 완화 힌트(실측 프로브) — 구체 대안
+        or any(k in text for k in ("필터", "옵션", "다른", "좁히", "넓혀",
+                                   "get_filter_options", "추천"))
+    )
     return notice and alternative
 
 

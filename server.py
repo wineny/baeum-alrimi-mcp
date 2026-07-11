@@ -42,6 +42,37 @@ STATUS_ALIASES = {
     "closed": "마감", "ended": "마감",
     "unknown": "미상",
 }
+# 카테고리 개념어 확장 — '강남구 운동' 인간 QA: 강좌명은 '요가'·'필라테스' 같은
+# 구체어뿐이라 상위 개념어의 리터럴 LIKE는 0건. keyword가 아래 키와 정확히 일치할
+# 때만 발동하므로 구체어 검색('요가')의 의미는 불변. acceptance.py py_filter가
+# server.expand_keyword를 공유해 교차 검증하므로 확장 규칙 변경 시 골든셋도 돈다.
+_SPORTS = ("요가", "필라테스", "댄스", "체조", "헬스", "스트레칭", "피트니스", "줌바",
+           "에어로빅", "탁구", "수영", "배드민턴", "걷기", "근력", "발레", "무용",
+           "골프", "축구", "농구", "스포츠", "체육", "태권", "기공", "운동")
+_MUSIC = ("음악", "악기", "피아노", "우쿨렐레", "바이올린", "드럼", "오카리나",
+          "하모니카", "색소폰", "플루트", "노래", "성악", "보컬", "합창", "국악",
+          "가야금", "난타", "통기타", "발성")
+_ART = ("미술", "그림", "드로잉", "수채화", "유화", "스케치", "서예", "캘리그라피",
+        "도예", "민화", "일러스트", "캐리커쳐")
+_LANG = ("어학", "외국어", "영어", "일본어", "중국어", "프랑스어", "독일어",
+         "스페인어", "한자")
+_COOK = ("요리", "베이킹", "제과", "제빵", "쿠킹", "디저트", "커피", "바리스타", "반찬")
+_DIGITAL = ("디지털", "컴퓨터", "스마트폰", "코딩", "엑셀", "포토샵", "유튜브",
+            "SNS", "인공지능", "AI", "영상편집", "영상 편집")
+_CRAFT = ("공예", "뜨개", "자수", "목공", "라탄", "캔들", "도자기", "가죽", "석고", "비누")
+_DANCE = ("댄스", "무용", "발레", "줌바", "라인댄스", "방송댄스", "밸리댄스", "댄스스포츠")
+
+CATEGORY_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "운동": _SPORTS, "스포츠": _SPORTS, "체육": _SPORTS,
+    "건강": _SPORTS + ("건강", "명상", "웰니스"),
+    "음악": _MUSIC, "악기": _MUSIC,
+    "미술": _ART, "그림": _ART,
+    "어학": _LANG, "외국어": _LANG, "언어": _LANG,
+    "요리": _COOK, "베이킹": _COOK,
+    "디지털": _DIGITAL, "컴퓨터": _DIGITAL, "스마트폰": _DIGITAL, "IT": _DIGITAL,
+    "공예": _CRAFT, "만들기": _CRAFT,
+    "춤": _DANCE, "댄스": _DANCE,
+}
 
 mcp = FastMCP(
     "baeum-alrimi",
@@ -188,6 +219,82 @@ def region_clause(region: str | None, params: dict[str, Any]) -> str:
     return " AND " + " AND ".join(clauses)
 
 
+def expand_keyword(keyword: str) -> list[str]:
+    """카테고리 개념어를 구체 강좌 어휘 목록으로 확장. 비카테고리 키워드는 그대로 1개."""
+    key = keyword.strip()
+    terms = CATEGORY_SYNONYMS.get(key)
+    if not terms:
+        return [keyword]
+    return [key] + [t for t in terms if t != key]
+
+
+def broaden_region(region: str) -> str | None:
+    """시군구 → 소속 시도 확장 ('강남구' → '서울특별시'). 확장 불가면 None.
+
+    다중 토큰('서울 강남구')은 마지막 토큰을 떼어내고, 단일 토큰은 DB에서
+    해당 시군구가 속한 시도를 최빈값으로 조회한다. 이미 시도명이거나
+    미존재 지역이면 None — 미존재 지역의 '없습니다' 안내는 기존 경로 유지.
+    """
+    tokens = [t for t in region.split() if t]
+    if not tokens:
+        return None
+    if len(tokens) > 1:
+        return " ".join(tokens[:-1])
+    con = db()
+    row = con.execute(
+        f"SELECT 시도 FROM courses WHERE 시군구 LIKE :r{ESC} AND 시도 != ''"
+        " GROUP BY 시도 ORDER BY COUNT(*) DESC LIMIT 1",
+        {"r": like(tokens[0])},
+    ).fetchone()
+    con.close()
+    if row and row[0] and tokens[0] not in row[0]:
+        return row[0]
+    return None
+
+
+def org_followup(rows: list[sqlite3.Row], today: str) -> str:
+    """과거 이력 카드에 붙는 후속 행동 섹션 — 기관별 다음 오픈 예상·연락처.
+
+    '없습니다'로 끝나는 응답을 행동 가능한 답(언제 열릴지·어디에 전화할지)으로
+    바꾸는 포지셔닝 핵심. 예상 라인은 INV-PREDICTION 규약대로 '(예상)' 표기와
+    단정 표현 금지를 지킨다.
+    """
+    orgs: list[sqlite3.Row] = []
+    seen: set[str] = set()
+    for r in rows:
+        name = r["운영기관명"]
+        if name and name not in seen:
+            seen.add(name)
+            orgs.append(r)
+        if len(orgs) == 5:
+            break
+    if not orgs:
+        return ""
+    con = db()
+    lines = ["\n\n**다음 접수 예상·문의처** (과거 이력 기반 추정, 확정 아님)"]
+    for r in orgs:
+        p = con.execute(
+            "SELECT 다음오픈예상 FROM enrollment_patterns"
+            " WHERE 기관 = :org AND 다음오픈예상 > :today"
+            " ORDER BY 다음오픈예상 LIMIT 1",
+            {"org": r["운영기관명"], "today": today},
+        ).fetchone()
+        last = con.execute(
+            "SELECT MAX(접수시작일자) FROM courses WHERE 운영기관명 = :org",
+            {"org": r["운영기관명"]},
+        ).fetchone()[0]
+        tel = r["운영기관전화번호"] or "번호 미상"
+        if p:
+            lines.append(f"- {r['운영기관명']}: 다음 오픈 {p[0]}경 (예상) · ☎ {tel}")
+        else:
+            lines.append(
+                f"- {r['운영기관명']}: 최근 접수 시작 {last or '미상'}"
+                f" · 다음 일정은 문의 · ☎ {tel}"
+            )
+    con.close()
+    return "\n".join(lines)
+
+
 def fee_label(row: sqlite3.Row) -> str:
     if row["무료여부"]:
         return "무료"
@@ -231,7 +338,14 @@ def course_card(row: sqlite3.Row, status: str, mark_status: bool = False) -> str
         " '오전에', or answering your clarifying question), KEEP the previous filters"
         " (region, keyword, weekday, time_range) and change only what the user changed."
         " Reset filters ONLY when the user starts an unrelated new question."
+        " Category-level keywords (운동, 음악, 미술, 어학, 요리, 디지털, 공예, 춤)"
+        " are auto-expanded to related concrete course terms (운동 → 요가·필라테스·댄스 …)."
         " Default shows courses currently open, upcoming, or always-open."
+        " Most public data is PAST history: when nothing is currently open, the"
+        " response returns the area's past course history plus each organization's"
+        " expected next opening and phone number — present that as a USEFUL ANSWER"
+        " (what usually runs there, when it may open next, where to call),"
+        " never as a bare 'no results'."
         " sort: deadline | fee | start_date. Returns course cards with course IDs"
         " usable in compare_courses / get_course_detail."
     ),
@@ -250,10 +364,18 @@ def search_courses(
     today = today_kst()
     params: dict[str, Any] = {"today": today}
     where = ["1=1"]
-    if keyword:
-        params["kw"] = like(keyword)
-        where.append(f"(강좌명 LIKE :kw{ESC} OR 강좌내용 LIKE :kw{ESC} OR 교육장소 LIKE :kw{ESC})")
+    kw_terms: list[str] = expand_keyword(keyword) if keyword else []
+    if kw_terms:
+        kw_parts = []
+        for j, t in enumerate(kw_terms):
+            k = f"kw{j}"
+            params[k] = like(t)
+            kw_parts.append(
+                f"강좌명 LIKE :{k}{ESC} OR 강좌내용 LIKE :{k}{ESC} OR 교육장소 LIKE :{k}{ESC}"
+            )
+        where.append("(" + " OR ".join(kw_parts) + ")")
     where.append(region_clause(region, params).replace(" AND ", "", 1) or "1=1")
+    region_idx = len(where) - 1  # 지역 확장 폴백이 이 절만 교체해 재조회한다
     ignored: list[str] = []
     days, bad_days = normalize_weekdays(weekday)
     if bad_days:
@@ -333,9 +455,19 @@ def search_courses(
         cond = " AND ".join(w for w in clauses if w != "1=1") or "1=1"
         con = db()
         n = con.execute(f"SELECT COUNT(*) FROM courses WHERE {cond}", params).fetchone()[0]
+        # 정렬 전역 규칙 2개를 sort 키 앞에 둔다 (건수 불변 — 골든셋 안전):
+        # 1) 동일 (기관, 강좌명)의 연도별 재등록은 최신 1건만 앞으로 (국악원
+        #    '부채춤' 2021~2026 중복이 페이지를 독점하던 인간 QA)
+        # 2) 교육기간이 이미 끝난 강좌는 뒤로 — '상시'라도 2021년 종료 강좌가
+        #    상단에 오는 오정보 방지
         rs = con.execute(
-            f"SELECT *, {STATUS_SQL} AS 접수상태 FROM courses WHERE {cond}"
-            f" ORDER BY {order_by} LIMIT :limit OFFSET :offset",
+            f"SELECT *, {STATUS_SQL} AS 접수상태,"
+            " ROW_NUMBER() OVER (PARTITION BY 운영기관명, 강좌명"
+            " ORDER BY 교육종료일자 DESC) AS _dup"
+            f" FROM courses WHERE {cond}"
+            " ORDER BY _dup > 1,"
+            " 교육종료일자 IS NOT NULL AND 교육종료일자 < :today,"
+            f" {order_by} LIMIT :limit OFFSET :offset",
             params,
         ).fetchall()
         con.close()
@@ -347,6 +479,13 @@ def search_courses(
         "\n\n※ 인식하지 못해 적용하지 않은 필터 — " + " · ".join(ignored)
         if ignored else ""
     )
+    if len(kw_terms) > 1:
+        sample = [t for t in kw_terms[1:] if t != keyword][:5]
+        notice += (
+            f"\n\n※ '{kw_terms[0]}'을(를) 카테고리로 인식해 관련 강좌"
+            f"({'·'.join(sample)} 등)까지 넓혀 검색했습니다."
+            " 특정 종목·과목만 원하면 keyword에 구체적인 이름을 넣어 주세요."
+        )
     if not region and rows:
         notice += (
             "\n\n※ 지역 미지정 — 전국 기준 결과라 특정 지역·기관에 치우칠 수 있습니다."
@@ -361,7 +500,7 @@ def search_courses(
                 ("마감",
                  "CASE WHEN 접수종료일자 IS NULL THEN 1 ELSE 0 END, 접수종료일자 DESC",
                  "아래는 모두 접수가 마감된 과거 운영 이력입니다 — 재개설되는 경우가"
-                 " 많으니 get_enrollment_calendar로 다음 접수 예상을 확인해 보세요."),
+                 " 많으니 하단의 다음 접수 예상·문의처를 사용자에게 안내해 주세요."),
                 ("미상",
                  "CASE WHEN 교육시작일자 IS NULL THEN 1 ELSE 0 END, 교육시작일자 DESC",
                  "아래는 접수 기간이 명시되지 않은 강좌입니다 — 신청 가능 여부는"
@@ -389,7 +528,51 @@ def search_courses(
                     )
                     if not region:
                         label += " (지역을 지정하면 더 정확해집니다.)"
-                    return finalize(head + cards + more + label + notice)
+                    return finalize(
+                        head + cards + more + label
+                        + org_followup(fb_rows, today) + notice
+                    )
+            # 3-tier: 지역 확장 — 해당 시군구에 과거 이력조차 0건이면 (강남구 운동
+            # QA: 표준데이터에 구 단위 커버리지 갭 존재) 소속 시도 전체로 넓혀
+            # 인근 강좌를 보여준다. 헤더에 '결과' 단어 금지 — 건수 오라클 회피.
+            if region:
+                broad = broaden_region(region)
+                if broad:
+                    b_where = list(where)
+                    b_where[region_idx] = (
+                        region_clause(broad, params).replace(" AND ", "", 1) or "1=1"
+                    )
+                    # 접수가능 상태 우선 (중복·종료 강등은 run_query 전역 규칙)
+                    b_order = (
+                        f"CASE WHEN ({STATUS_SQL}) IN ('접수중','예정','상시')"
+                        " THEN 0 ELSE 1 END,"
+                        " CASE WHEN 접수종료일자 IS NULL THEN 1 ELSE 0 END,"
+                        " 접수종료일자 DESC, 교육종료일자 DESC"
+                    )
+                    b_total, b_rows = run_query(b_where, b_order)
+                    if b_rows:
+                        head = (
+                            f"### [지역 확장] '{region}' 0건 → '{broad}' 전체 {b_total}건"
+                            f" (페이지 {page}, {len(b_rows)}건 표시, 기준일 {today})\n"
+                        )
+                        cards = "\n".join(
+                            course_card(r, r["접수상태"], mark_status=True)
+                            for r in b_rows
+                        )
+                        more = (
+                            f"\n\n다음 페이지: page={page + 1}"
+                            if b_total > page * PAGE_SIZE else ""
+                        )
+                        label = (
+                            f"\n\n※ '{region}'에는 해당 조건의 강좌가 과거 이력까지"
+                            f" 없습니다. 대신 '{broad}' 전체에서 찾은 강좌입니다"
+                            " (카드 첫 대괄호가 접수 상태). 다른 지역명이나 keyword로"
+                            " 다시 좁혀 검색할 수 있습니다."
+                        )
+                        return finalize(
+                            head + cards + more + label
+                            + org_followup(b_rows, today) + notice
+                        )
         return finalize(
             "조건에 맞는 강좌가 없습니다. 필터를 넓혀 보세요"
             " (예: status에 '마감' 포함, 지역 넓히기, get_filter_options로 유효값 확인)."
@@ -416,6 +599,9 @@ def search_courses(
         " (clearly marked as estimates, with evidence)."
         " For area-wide questions, prefer one region query over multiple"
         " center_name calls — it covers every organization in the area."
+        " When neither scheduled nor predicted openings exist, the response lists"
+        " the area's organizations with phone contacts and their last opening date"
+        " — guide the user to call them instead of ending with 'nothing found'."
     ),
 )
 def get_enrollment_calendar(
@@ -470,6 +656,17 @@ def get_enrollment_calendar(
         " ORDER BY 다음오픈예상 LIMIT 15",
         p_params,
     ).fetchall()
+    contacts: list[sqlite3.Row] = []
+    if not upcoming and not predicted and where:
+        # 예정·예측 모두 없는 지역이 '없음'으로 끝나지 않도록 — 기관 연락처와
+        # 최근 접수 시작일(사실 정보, 예측 아님)이 실질적인 다음 행동을 만든다
+        contacts = con.execute(
+            "SELECT 운영기관명, MAX(운영기관전화번호) AS tel,"
+            " MAX(접수시작일자) AS last_open, COUNT(*) AS n"
+            f" FROM courses WHERE 운영기관명 != ''{where}"
+            " GROUP BY 운영기관명 ORDER BY n DESC LIMIT 8",
+            params,
+        ).fetchall()
     con.close()
 
     parts = [f"### 접수 캘린더 (기준일 {today}, 향후 약 {horizon}일)"]
@@ -491,6 +688,16 @@ def get_enrollment_calendar(
             )
     else:
         parts.append("\n**② 과거 이력 기반 다음 오픈 예상**: 예측 가능한 기관 없음 (과거 오픈 이력이 주기 추정에 부족)")
+    if contacts:
+        parts.append(
+            "\n**③ 기관 문의처** — 예정·예측 데이터가 없어도 기관에 직접 문의하면"
+            " 다음 접수 일정을 확인할 수 있습니다"
+        )
+        for r in contacts:
+            parts.append(
+                f"- {r['운영기관명']} · ☎ {r['tel'] or '미상'}"
+                f" · 최근 접수 시작 {r['last_open'] or '미상'} · 등록 강좌 {r['n']}건"
+            )
     return finalize("\n".join(parts))
 
 

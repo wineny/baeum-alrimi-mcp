@@ -57,15 +57,31 @@ def py_filter(
     for r in rows:
         if py_status(r) not in statuses:
             continue
-        if keyword and not any(
-            keyword in (r[c] or "") for c in ("강좌명", "강좌내용", "교육장소")
-        ):
-            continue
-        if region and not any(
-            region in (r[c] or "")
-            for c in ("시도", "시군구", "교육장도로명주소", "교육장소")
-        ):
-            continue
+        if keyword:
+            # 카테고리 확장 규칙(expand_keyword)은 서버와 공유하되 매칭 자체는
+            # SQL과 독립 재구현. lower()는 SQL LIKE의 ASCII 대소문자 무시 대응.
+            terms = server.expand_keyword(keyword)
+            hit = any(
+                t.lower() in (r[c] or "").lower()
+                for t in terms
+                for c in ("강좌명", "강좌내용", "교육장소")
+            )
+            if not hit:
+                continue
+        if region:
+            # 서버 region 스펙 재구현: 토큰별 AND, 시도·시군구 우선,
+            # 도로명주소는 구조화 필드가 빈 행의 폴백만. 교육장소(건물명)는
+            # 제외 — '새서울프라자'(과천) 오탐 인간 QA 반영.
+            struct_empty = not (r["시도"] or "") or not (r["시군구"] or "")
+            ok = True
+            for tok in region.split():
+                struct_hit = tok in (r["시도"] or "") or tok in (r["시군구"] or "")
+                addr_hit = struct_empty and tok in (r["교육장도로명주소"] or "")
+                if not (struct_hit or addr_hit):
+                    ok = False
+                    break
+            if not ok:
+                continue
         if weekday:
             have = set((r["요일_정규화"] or "").split(","))
             if not (set(weekday) & have):
@@ -109,6 +125,9 @@ GOLDEN = [
     {"keyword": "수영"},
     {"keyword": "컴퓨터"},
     {"keyword": "국악"},
+    {"keyword": "운동"},
+    {"keyword": "운동", "region": "서울", "status": ["접수중", "예정", "상시", "마감", "미상"]},
+    {"keyword": "음악", "status": ["마감"]},
     {"status": ["마감"]},
     {"status": ["상시"]},
     {"status": ["접수중"]},

@@ -490,7 +490,7 @@ def get_enrollment_calendar(
                 f" ({r['시도']} {r['시군구']})".rstrip() + f"\n  - 근거: {r['근거']}"
             )
     else:
-        parts.append("\n**② 과거 이력 기반 다음 오픈 예상**: 예측 가능한 기관 없음 (이력 2회 미만)")
+        parts.append("\n**② 과거 이력 기반 다음 오픈 예상**: 예측 가능한 기관 없음 (과거 오픈 이력이 주기 추정에 부족)")
     return finalize("\n".join(parts))
 
 

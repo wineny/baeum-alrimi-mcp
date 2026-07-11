@@ -3,8 +3,11 @@
 
 - 과거 고유 접수시작일 2회 이상인 기관만 예상 생성 — 거짓 예측 방지
 - 월중최빈일은 강좌 건수 가중(실측: 강남구 28일 149건·6일 135건 집중과 부합해야 함)
+- 인접 간격 ≤7일 클러스터 병합이 event/distinct 공통 전처리 — 며칠에 걸친 일괄 오픈을
+  1회 웨이브로 집계해 '간격 1일' 같은 무의미 주기를 차단(인간 QA 발견). 병합 후
+  클러스터 <2면 주기 신호 없음으로 예측 생략. 생존 패턴 불변식: 중앙주기일 ≥ 8
 - 예측은 '대규모 오픈 이벤트'(해당 일자 강좌 수가 기관 전체의 10% 이상 또는 5건 이상)
-  간격을 우선 사용, 이벤트가 2회 미만이면 고유 일자 간격 중앙값 사용
+  클러스터 간격을 우선 사용, 이벤트 클러스터가 2회 미만이면 고유 일자 클러스터 사용
 - 근거 문자열에 '과거 N회 기준' + '예상이며 확정 아님' 필수 (확정형 표현 금지, PRD §9)
 - 명시된 미래 접수창은 courses 테이블에서 질의 시점에 직접 조회(별도 저장 불필요)
 """
@@ -33,6 +36,17 @@ CREATE TABLE enrollment_patterns (
 );
 CREATE INDEX idx_patterns_region ON enrollment_patterns(시도, 시군구);
 """
+
+
+def merge_clusters(days: list[date], max_gap: int = 7) -> list[date]:
+    """인접 간격 ≤ max_gap일이면 같은 오픈 웨이브로 병합, 클러스터별 첫날을 앵커로 반환."""
+    anchors: list[date] = []
+    prev: date | None = None
+    for d in days:
+        if prev is None or (d - prev).days > max_gap:
+            anchors.append(d)
+        prev = d
+    return anchors
 
 
 def build_basis(
@@ -66,7 +80,7 @@ def main() -> int:
         " WHERE 운영기관명 != '' GROUP BY 운영기관명, 시도, 시군구"
     ).fetchall()
 
-    inserted = skipped = 0
+    inserted = skipped = skipped_merge = 0
     for org, sido, sigungu in orgs:
         rows = con.execute(
             "SELECT 접수시작일자, COUNT(*) FROM courses"
@@ -94,16 +108,20 @@ def main() -> int:
         threshold = max(5, total_courses * 0.1)
         events = [d for d, c in zip(dates, counts) if c >= threshold]
 
-        if len(events) >= 2:
-            gaps = [(b - a).days for a, b in zip(events, events[1:]) if (b - a).days > 0]
-            gap = int(median(gaps)) if gaps else 90
-            anchor, mode, n_basis = events[-1], "event", len(events)
-            basis_dates = events
+        # 클러스터 병합은 event/distinct 공통 전처리 — 원본 고유일로의 gap 재계산 금지
+        # (병합 이전 일자를 쓰면 클러스터 내부 1~3일 간격이 주기로 부활)
+        event_anchors = merge_clusters(events)
+        if len(event_anchors) >= 2:
+            anchors, mode = event_anchors, "event"
         else:
-            gaps = [(b - a).days for a, b in zip(dates, dates[1:]) if (b - a).days > 0]
-            gap = int(median(gaps)) if gaps else 30
-            anchor, mode, n_basis = last, "distinct", len(dates)
-            basis_dates = dates
+            anchors, mode = merge_clusters(dates), "distinct"
+        if len(anchors) < 2:
+            # 전체 이력이 단일 오픈 웨이브 = 주기 신호 없음 → 오정보 대신 예측 생략
+            skipped_merge += 1
+            continue
+        gaps = [(b - a).days for a, b in zip(anchors, anchors[1:])]
+        gap = int(median(gaps))
+        anchor, n_basis, basis_dates = anchors[-1], len(anchors), anchors
 
         expected = anchor + timedelta(days=gap)
         while expected <= today:
@@ -118,7 +136,10 @@ def main() -> int:
         inserted += 1
 
     con.commit()
-    print(f"patterns={inserted} skipped(이력<2회)={skipped}")
+    print(
+        f"patterns={inserted} skipped(이력<2회)={skipped}"
+        f" skipped(병합후클러스터<2)={skipped_merge}"
+    )
     for row in con.execute(
         "SELECT 기관, 회차수, 월중최빈일, 월중최빈비율, 중앙주기일, 다음오픈예상, 근거"
         " FROM enrollment_patterns WHERE 시군구='강남구'"

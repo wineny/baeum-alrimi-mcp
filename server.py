@@ -414,6 +414,8 @@ def search_courses(
         " explicitly scheduled in the data and (2) statistically expected next"
         " openings based on each organization's past opening history"
         " (clearly marked as estimates, with evidence)."
+        " For area-wide questions, prefer one region query over multiple"
+        " center_name calls — it covers every organization in the area."
     ),
 )
 def get_enrollment_calendar(

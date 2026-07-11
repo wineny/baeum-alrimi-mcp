@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>배움알리미 MCP 인간 QA</title>
+<style>
+  :root { --bg:#f2f4f8; --panel:#fff; --ink:#1f2430; --sub:#7c8494; --accent:#3d5a99; --tool:#edf1f8; }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:'Apple SD Gothic Neo',Pretendard,sans-serif; background:var(--bg); color:var(--ink);
+         display:flex; flex-direction:column; height:100vh; max-width:760px; margin:0 auto; }
+  header { padding:14px 16px 8px; }
+  header h1 { font-size:16px; font-weight:700; }
+  header p { font-size:12px; color:var(--sub); margin-top:2px; }
+  #presets { display:flex; gap:6px; flex-wrap:wrap; padding:8px 16px; }
+  #presets button { font-size:12px; padding:5px 10px; border:1px solid #d4d9e3; border-radius:14px;
+                    background:var(--panel); cursor:pointer; color:var(--ink); }
+  #presets button:hover { border-color:var(--accent); color:var(--accent); }
+  #log { flex:1; overflow-y:auto; padding:8px 16px 16px; display:flex; flex-direction:column; gap:10px; }
+  .msg { max-width:88%; padding:10px 13px; border-radius:12px; font-size:14px; line-height:1.6;
+         white-space:pre-wrap; word-break:break-word; }
+  .user { align-self:flex-end; background:var(--accent); color:#fff; border-bottom-right-radius:4px; }
+  .bot  { align-self:flex-start; background:var(--panel); border:1px solid #e0e4ec; border-bottom-left-radius:4px; }
+  .tool { align-self:flex-start; width:88%; background:var(--tool); border:1px solid #ccd6e8;
+          border-radius:10px; font-size:12px; }
+  .tool summary { padding:8px 12px; cursor:pointer; color:var(--accent); font-weight:600; }
+  .tool pre { padding:0 12px 10px; overflow-x:auto; white-space:pre-wrap; color:#444; font-size:11.5px; }
+  .err { align-self:center; color:#a33; font-size:12px; }
+  .busy { align-self:flex-start; color:var(--sub); font-size:13px; }
+  form { display:flex; gap:8px; padding:12px 16px 16px; }
+  input[type=text] { flex:1; padding:11px 14px; font-size:14px; border:1px solid #d4d9e3; border-radius:10px;
+                     background:var(--panel); outline:none; }
+  input[type=text]:focus { border-color:var(--accent); }
+  form button { padding:0 18px; border:0; border-radius:10px; background:var(--accent); color:#fff;
+                font-size:14px; cursor:pointer; }
+  #reset { background:none; border:0; color:var(--sub); font-size:12px; cursor:pointer; text-decoration:underline; }
+</style>
+</head>
+<body>
+<header>
+  <h1>배움알리미 MCP — 인간 QA <button id="reset">대화 초기화</button></h1>
+  <p>15,752강좌 · tool 6종 (pydantic 경로) · 모델이 고른 tool과 인자가 파란 카드로 표시됩니다</p>
+</header>
+<div id="presets">
+  <button>요가 배우고 싶어</button>
+  <button>서울 강북구에서 들을 만한 거 있어?</button>
+  <button>주말 저녁 무료 강좌 찾아줘</button>
+  <button>강남구청 다음 접수 언제 열려?</button>
+  <button>지금 바로 신청 확정해줘</button>
+  <button>yoga classes for seniors</button>
+  <button>어떤 지역·분야가 있는지 통계 좀</button>
+  <button>아까 그 조건으로 부산도 봐줘</button>
+</div>
+<div id="log"></div>
+<form id="form">
+  <input type="text" id="input" placeholder="사용자 발화를 입력하세요… (예: 요가 배우고 싶어)" autocomplete="off" autofocus>
+  <button type="submit">전송</button>
+</form>
+<script>
+let messages = [];
+const log = document.getElementById('log');
+const input = document.getElementById('input');
+
+function add(cls, text) {
+  const d = document.createElement('div');
+  d.className = 'msg ' + cls;
+  d.textContent = text;
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+  return d;
+}
+function addTool(ev) {
+  const d = document.createElement('details');
+  d.className = 'tool';
+  const summary = document.createElement('summary');
+  summary.textContent = '🔧 ' + ev.tool + ' ' + JSON.stringify(ev.input);
+  const pre = document.createElement('pre');
+  pre.textContent = ev.output;
+  d.appendChild(summary);
+  d.appendChild(pre);
+  log.appendChild(d);
+  log.scrollTop = log.scrollHeight;
+}
+async function send(text) {
+  if (!text.trim()) return;
+  add('user', text);
+  input.value = '';
+  const busy = add('busy', '⋯ 모델 응답 중');
+  try {
+    const r = await fetch('/chat', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({messages, user: text}),
+    });
+    const data = await r.json();
+    busy.remove();
+    if (data.error) { add('err', data.error); return; }
+    messages = data.messages;
+    for (const ev of data.events) {
+      if (ev.kind === 'tool') addTool(ev);
+      else add('bot', ev.text);
+    }
+  } catch (e) {
+    busy.remove();
+    add('err', '요청 실패: ' + e);
+  }
+}
+document.getElementById('form').addEventListener('submit', e => { e.preventDefault(); send(input.value); });
+document.querySelectorAll('#presets button').forEach(b =>
+  b.addEventListener('click', () => send(b.textContent)));
+document.getElementById('reset').addEventListener('click', () => {
+  messages = []; log.innerHTML = ''; input.focus();
+});
+</script>
+</body>
+</html>

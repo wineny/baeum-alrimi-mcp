@@ -8,8 +8,9 @@
 import os
 import re
 import sqlite3
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from typing import Any
+from urllib.parse import quote
 from zoneinfo import ZoneInfo
 
 from mcp.server.fastmcp import FastMCP
@@ -128,6 +129,30 @@ def finalize(body: str) -> str:
         budget -= len(notice.encode("utf-8"))
         body = raw[:budget].decode("utf-8", errors="ignore") + notice
     return body + foot
+
+
+def gcal_link(title: str, day: str | None) -> str | None:
+    """구글 캘린더 '일정 추가' 등록 링크 (순수 문자열 조립, 외부 호출 0).
+
+    day가 YYYY-MM-DD가 아니면 None. 종일 일정이라 종료일은 시작일+1일
+    (exclusive) 규약을 따른다. text는 한글 %인코딩 팽창 대비 24자로 캡한다.
+    """
+    if not day:
+        return None
+    try:
+        start = date.fromisoformat(day)
+    except ValueError:
+        return None
+    end = start + timedelta(days=1)
+    text = quote(title[:24], safe="")
+    dates = f"{start.strftime('%Y%m%d')}/{end.strftime('%Y%m%d')}"
+    url = (
+        "https://calendar.google.com/calendar/render?action=TEMPLATE"
+        f"&text={text}&dates={dates}"
+    )
+    assert "kakao" not in url.lower(), "gcal_link: kakao 문자열 유입"
+    assert len(url) < 2000, f"gcal_link: URL {len(url)}자 >= 2000"
+    return url
 
 
 STATUS_SQL = (
@@ -582,7 +607,18 @@ def search_courses(
         f"### 강좌 검색 결과 {total}건 (페이지 {page}, {len(rows)}건 표시,"
         f" 기준일 {today})\n"
     )
-    cards = "\n".join(course_card(r, r["접수상태"]) for r in rows)
+
+    def render_card(r: sqlite3.Row) -> str:
+        # course_card 자체는 미변경(CARD_ID_RE 앵커 보호) — 조립부에서만 링크 부착.
+        # '예정' 카드에만: 접수중·마감·상시·미상은 접수시작일이 없거나 무의미.
+        card = course_card(r, r["접수상태"])
+        if r["접수상태"] == "예정":
+            url = gcal_link(f"배움알리미 · {r['강좌명']} 접수 시작", r["접수시작일자"])
+            if url:
+                card += f"\n  - 일정 추가: {url}"
+        return card
+
+    cards = "\n".join(render_card(r) for r in rows)
     more = (
         f"\n\n다음 페이지: page={page + 1}" if total > page * PAGE_SIZE else ""
     )
@@ -669,36 +705,93 @@ def get_enrollment_calendar(
         ).fetchall()
     con.close()
 
-    parts = [f"### 접수 캘린더 (기준일 {today}, 향후 약 {horizon}일)"]
+    # 엔트리 목록을 먼저 텍스트만으로 구성한다(링크 없이). entries의 각 원소는
+    # (텍스트, 링크후보|None). 링크후보 = (title, day) — gcal_link 인자.
+    entries: list[tuple[str, tuple[str, str | None] | None]] = []
     if upcoming:
-        parts.append("\n**① 데이터에 명시된 예정 접수창**")
-        for r in upcoming:
-            parts.append(
+        entries.append(("\n**① 데이터에 명시된 예정 접수창**", None))
+        for i, r in enumerate(upcoming):
+            text = (
                 f"- {r['접수시작일자']} ~ {r['접수종료일자']} · {r['운영기관명']}"
                 f" ({r['시도']} {r['시군구']})".rstrip() + f" · 강좌 {r['n']}개"
             )
+            # ① 상한: 최대 20개 중 상위 12개에만 링크 후보 부여
+            link = (
+                (f"배움알리미 · {r['운영기관명']} 접수 시작", r["접수시작일자"])
+                if i < 12 else None
+            )
+            entries.append((text, link))
     else:
-        parts.append("\n**① 데이터에 명시된 예정 접수창**: 해당 기간 내 없음")
+        entries.append(("\n**① 데이터에 명시된 예정 접수창**: 해당 기간 내 없음", None))
     if predicted:
-        parts.append("\n**② 과거 이력 기반 다음 오픈 예상** (확정 아님)")
+        entries.append(("\n**② 과거 이력 기반 다음 오픈 예상** (확정 아님)", None))
         for r in predicted:
-            parts.append(
+            text = (
                 f"- {r['다음오픈예상']}경 (예상) · {r['기관']}"
                 f" ({r['시도']} {r['시군구']})".rstrip() + f"\n  - 근거: {r['근거']}"
             )
+            # title에 '[예상]' 포함 → CERTAINTY_RE 회피(예측 라인 규약 유지)
+            entries.append((text, (f"[예상] {r['기관']} 접수 오픈", r["다음오픈예상"])))
     else:
-        parts.append("\n**② 과거 이력 기반 다음 오픈 예상**: 예측 가능한 기관 없음 (과거 오픈 이력이 주기 추정에 부족)")
+        entries.append((
+            "\n**② 과거 이력 기반 다음 오픈 예상**: 예측 가능한 기관 없음"
+            " (과거 오픈 이력이 주기 추정에 부족)", None
+        ))
     if contacts:
-        parts.append(
+        entries.append((
             "\n**③ 기관 문의처** — 예정·예측 데이터가 없어도 기관에 직접 문의하면"
-            " 다음 접수 일정을 확인할 수 있습니다"
-        )
+            " 다음 접수 일정을 확인할 수 있습니다", None
+        ))
         for r in contacts:
-            parts.append(
+            entries.append((
                 f"- {r['운영기관명']} · ☎ {r['tel'] or '미상'}"
-                f" · 최근 접수 시작 {r['last_open'] or '미상'} · 등록 강좌 {r['n']}건"
-            )
-    return finalize("\n".join(parts))
+                f" · 최근 접수 시작 {r['last_open'] or '미상'} · 등록 강좌 {r['n']}건",
+                None,
+            ))
+
+    # 링크 바이트 안전망: 텍스트만으로 조립한 본문 크기를 먼저 정확히 구한 뒤,
+    # 남는 여유 안에서만 링크를 앞에서부터 채운다(추정치 아닌 실측 크기 기준이라
+    # 미처리 구간을 몰라 예산을 초과하는 문제가 없다). 예산 근접 시 이후 엔트리는
+    # 텍스트만 남기고 '일정 추가' 링크만 생략(엔트리 자체는 절대 삭제하지 않음).
+    # finalize()의 raw[:budget] 최종 절단은 그대로 백스톱으로 유지.
+    LINK_OMIT_NOTICE = "\n\n…(이하 일정 추가 링크 생략 — 접수일은 위 텍스트로 확인)"
+    header = f"### 접수 캘린더 (기준일 {today}, 향후 약 {horizon}일)"
+    text_only_body = "\n".join([header] + [t for t, _ in entries])
+    footer_bytes = len(footer().encode("utf-8"))
+    notice_bytes = len(LINK_OMIT_NOTICE.encode("utf-8"))
+    link_slack = max(
+        0,
+        MAX_BYTES - footer_bytes - len(text_only_body.encode("utf-8")) - notice_bytes,
+    )
+
+    parts = [header]
+    links_enabled = True
+    omitted_any = False
+    cum_link_bytes = 0
+    for text, link in entries:
+        parts.append(text)
+        if link is None:
+            continue
+        title, day = link
+        url = gcal_link(title, day)
+        if url is None:
+            continue
+        if not links_enabled:
+            omitted_any = True
+            continue
+        line = f"  - 일정 추가: {url}"
+        cost = len(line.encode("utf-8")) + 1  # +1: 이 항목이 추가하는 join 구분자
+        if cum_link_bytes + cost > link_slack:
+            links_enabled = False
+            omitted_any = True
+            continue
+        parts.append(line)
+        cum_link_bytes += cost
+
+    body = "\n".join(parts)
+    if omitted_any:
+        body += LINK_OMIT_NOTICE
+    return finalize(body)
 
 
 @mcp.tool(

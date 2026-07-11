@@ -459,9 +459,12 @@ def get_enrollment_calendar(
     if center_name:
         p_params["center"] = like(center_name)
         p_where += f" AND 기관 LIKE :center{ESC}"
+    # 하한 필터: 다음오픈예상은 빌드일 기준으로만 미래 보장 — 빌드 후 날짜가 지나
+    # 과거가 된 예상일은 오정보이므로 서빙에서 억제 (재계산은 빌드 SSOT 담당)
     predicted = con.execute(
         "SELECT 기관, 시도, 시군구, 회차수, 다음오픈예상, 근거 FROM enrollment_patterns"
-        f" WHERE 다음오픈예상 <= date(:today, :horizon){p_where}"
+        f" WHERE 다음오픈예상 > date(:today)"
+        f" AND 다음오픈예상 <= date(:today, :horizon){p_where}"
         " ORDER BY 다음오픈예상 LIMIT 15",
         p_params,
     ).fetchall()

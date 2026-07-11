@@ -562,6 +562,7 @@ def search_courses(
             # 인근 강좌를 보여준다. 헤더에 '결과' 단어 금지 — 건수 오라클 회피.
             if region:
                 broad = broaden_region(region)
+                b_rows: list[sqlite3.Row] = []
                 if broad:
                     b_where = list(where)
                     b_where[region_idx] = (
@@ -598,6 +599,64 @@ def search_courses(
                             head + cards + more + label
                             + org_followup(b_rows, today) + notice
                         )
+                # 4-tier: 타지역 교차 대안 — 소속 시도 전체(또는 이미 시도 단위인
+                # region)에서조차 keyword가 과거 이력까지 0건인 진짜 희소 케이스에서만,
+                # 어느 시도에 있는지 실카운트로 교차 집계해 안내한다(§2 tier3b).
+                # region 자체가 데이터에 존재하는지 먼저 확인 — 미존재 지역(예:
+                # 화성외계신도시구)의 기존 '없습니다' 낙하를 그대로 보존하기 위함.
+                if kw_terms and not b_rows:
+                    exists_total, _ = run_query([where[region_idx]], order)
+                    if exists_total > 0:
+                        alt_where = [
+                            w for i, w in enumerate(where) if i != region_idx
+                        ]
+                        alt_cond = (
+                            " AND ".join(w for w in alt_where if w != "1=1")
+                            or "1=1"
+                        )
+                        con = db()
+                        rows_alt = con.execute(
+                            "SELECT COALESCE(NULLIF(시도,''),'기타') AS 시도군,"
+                            " COUNT(*) AS n FROM courses"
+                            f" WHERE {alt_cond}"
+                            f" AND ({STATUS_SQL}) IN ('접수중','예정','상시')"
+                            " AND 시도 != ''"
+                            " GROUP BY 시도군 ORDER BY n DESC, 시도군 LIMIT 5",
+                            params,
+                        ).fetchall()
+                        con.close()
+                        if rows_alt:
+                            if broad:
+                                head = (
+                                    f"### [타지역 안내] '{region}'(및 상위 '{broad}'"
+                                    f" 전체) 0건 (기준일 {today})\n"
+                                )
+                                absence = (
+                                    f"\n\n※ '{region}'는 물론 상위 '{broad}' 전체에도"
+                                    f" keyword='{keyword}' 조건의 강좌가 과거 이력까지"
+                                    " 없습니다."
+                                )
+                            else:
+                                head = (
+                                    f"### [타지역 안내] '{region}' 전체 0건"
+                                    f" (기준일 {today})\n"
+                                )
+                                absence = (
+                                    f"\n\n※ '{region}' 전체에 keyword='{keyword}'"
+                                    " 조건의 강좌가 과거 이력까지 없습니다."
+                                )
+                            alt_desc = " · ".join(
+                                f"{r['시도군']}({r['n']})" for r in rows_alt
+                            )
+                            label = (
+                                absence
+                                + " 대신 다른 시도에는 있습니다 — 보유 현황:"
+                                f" {alt_desc}."
+                                + " region을 바꿔(예: region="
+                                f'"{rows_alt[0]["시도군"]}") 다시 검색하거나'
+                                " keyword를 넓혀 보세요."
+                            )
+                            return finalize(head + label + notice)
         return finalize(
             "조건에 맞는 강좌가 없습니다. 필터를 넓혀 보세요"
             " (예: status에 '마감' 포함, 지역 넓히기, get_filter_options로 유효값 확인)."

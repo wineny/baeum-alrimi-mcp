@@ -167,6 +167,12 @@ def region_clause(region: str | None, params: dict[str, Any]) -> str:
 
     LLM이 '서울 강북구'처럼 시도+시군구를 한 문자열로 보내는 사례 관측(스팟체크):
     단일 LIKE로는 시도='서울특별시'/시군구='강북구'로 나뉜 데이터에 매치 불가.
+
+    도로명주소는 시도·시군구가 빈 행(시도 481건·시군구 3,512건)의 폴백으로만 사용:
+    구조화 필드가 채워진 행까지 주소를 훑으면 '시흥시 서울대학로' 같은 도로명이
+    타지역 검색에 섞인다. 교육장소(건물명)는 지역 판별에 사용하지 않는다 —
+    '새서울프라자'(과천)가 region='서울'에 매치된 인간 QA 발견, 지역 정보가
+    교육장소에만 있는 행은 0건.
     """
     if not region:
         return ""
@@ -176,7 +182,8 @@ def region_clause(region: str | None, params: dict[str, Any]) -> str:
         params[key] = like(tok)
         clauses.append(
             f"(시도 LIKE :{key}{ESC} OR 시군구 LIKE :{key}{ESC}"
-            f" OR 교육장도로명주소 LIKE :{key}{ESC} OR 교육장소 LIKE :{key}{ESC})"
+            f" OR ((시도 IS NULL OR 시도='' OR 시군구 IS NULL OR 시군구='')"
+            f" AND 교육장도로명주소 LIKE :{key}{ESC}))"
         )
     return " AND " + " AND ".join(clauses)
 

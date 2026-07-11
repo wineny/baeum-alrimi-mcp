@@ -138,6 +138,27 @@ def test_search_adversarial() -> None:
     out = server.search_courses(region="화성시비둘기동구름마을")
     check("없는 지역 안내", "없습니다" in out)
 
+    # region 오탐 회귀 (인간 QA 웹 프론트 발견 2026-07-11): 건물명 '새서울프라자'(경기 과천)가
+    # region='서울'에 substring 매치되던 결함 — 교육장소는 지역 판별에서 제외됨
+    out = server.search_courses(keyword="요가", region="서울", status=ALL_STATUS)
+    check("region=서울 요가에 과천 오탐 없음", "과천" not in out)
+    # 시도·시군구 빈 행은 도로명주소 폴백으로 계속 매치되어야 함 (시도 빈값 481건 손실 금지)
+    conn = server.db()
+    n_struct = conn.execute(
+        "SELECT COUNT(*) FROM courses WHERE 시도 LIKE '%서울%' OR 시군구 LIKE '%서울%'"
+    ).fetchone()[0]
+    n_addr_fb = conn.execute(
+        "SELECT COUNT(*) FROM courses WHERE (시도 IS NULL OR 시도='' OR 시군구 IS NULL OR 시군구='')"
+        " AND 교육장도로명주소 LIKE '%서울%'"
+        " AND NOT (시도 LIKE '%서울%' OR 시군구 LIKE '%서울%')"
+    ).fetchone()[0]
+    n_region = total_of(server.search_courses(region="서울", status=ALL_STATUS))
+    check(
+        "region=서울 = 구조화필드 + 주소폴백",
+        n_region == n_struct + n_addr_fb,
+        f"region={n_region} struct={n_struct} addr_fb={n_addr_fb}",
+    )
+
 
 # ── 3. 나머지 5개 tool 경계 ──────────────────────────────────
 def test_other_tools() -> None:

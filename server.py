@@ -345,8 +345,13 @@ def fee_label(row: sqlite3.Row) -> str:
 
 
 def course_card(row: sqlite3.Row, status: str, mark_status: bool = False) -> str:
-    days = row["요일_정규화"] or "요일 미상"
-    time_s = f"{row['교육시작시각'] or '?'}~{row['교육종료시각'] or '?'}"
+    if status == "상시" and not row["요일_정규화"] and not row["교육시작시각"]:
+        # 상시 강좌의 '요일 미상 ?~?'는 정보가 아니라 소음 — 이용 안내로 대체
+        # (LLM 교차감사 D7 백로그). 요일·시각이 있으면 기존 표기 유지.
+        sched = "상시 운영 — 이용 시간·방법은 기관 문의"
+    else:
+        days = row["요일_정규화"] or "요일 미상"
+        sched = f"{days} {row['교육시작시각'] or '?'}~{row['교육종료시각'] or '?'}"
     recv = (
         f"{row['접수시작일자'] or '?'}~{row['접수종료일자'] or '?'}"
         if status != "상시" else "상시접수"
@@ -360,7 +365,7 @@ def course_card(row: sqlite3.Row, status: str, mark_status: bool = False) -> str
     return (
         title
         + f"  - {row['운영기관명']} · {row['시도']} {row['시군구']}".rstrip() + "\n"
-        + f"  - {days} {time_s} · {fee_label(row)} · 대상 {row['교육대상구분'] or '미상'}\n"
+        + f"  - {sched} · {fee_label(row)} · 대상 {row['교육대상구분'] or '미상'}\n"
         + f"  - 교육 {row['교육시작일자']}~{row['교육종료일자']} · 접수 {recv}"
     )
 
@@ -948,6 +953,21 @@ def compare_courses(course_ids: list[int]) -> str:
         line("접수상태", lambda r: r["접수상태"]),
         line("정원", lambda r: r["강좌정원수"] or "미상"),
     ])
+    # 비교 대상이 전원 마감/미상이면 다음 행동이 없다 — 기관 문의처를 붙여
+    # 재개설 확인 경로를 만든다 (LLM 교차감사 P4-3 백로그)
+    if all(r["접수상태"] in ("마감", "미상") for r in rows):
+        seen: set[str] = set()
+        tel_lines = []
+        for r in rows:
+            org = r["운영기관명"]
+            if org and org not in seen:
+                seen.add(org)
+                tel_lines.append(f"- {org} · ☎ {r['운영기관전화번호'] or '미상'}")
+        body += (
+            "\n\n※ 비교한 강좌가 모두 접수 마감(또는 접수기간 미상)입니다."
+            " 재개설 여부는 운영기관에 직접 확인할 수 있습니다:\n"
+            + "\n".join(tel_lines)
+        )
     return finalize(f"### 강좌 비교 ({len(rows)}개, 기준일 {today})\n" + body)
 
 

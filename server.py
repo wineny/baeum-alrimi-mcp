@@ -20,6 +20,7 @@ SERVICE_NAME = "Baeum-Alrimi(배움알리미)"
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(__file__), "data", "courses.db"))
 KST = ZoneInfo("Asia/Seoul")
 MAX_BYTES = 23 * 1024  # 규정 24KB에 안전 마진
+CAL_LINK_CAP = 12  # 캘린더 ① 예정 접수창 중 상위 N개에만 gcal 링크 부착 (24KB 예산 통제)
 PAGE_SIZE = 8
 WEEKDAYS = "월화수목금토일"
 EN_DAYS = {"mon": "월", "tue": "화", "wed": "수", "thu": "목", "fri": "금", "sat": "토", "sun": "일"}
@@ -827,10 +828,10 @@ def get_enrollment_calendar(
                 f"- {r['접수시작일자']} ~ {r['접수종료일자']} · {r['운영기관명']}"
                 f" ({r['시도']} {r['시군구']})".rstrip() + f" · 강좌 {r['n']}개"
             )
-            # ① 상한: 최대 20개 중 상위 12개에만 링크 후보 부여
+            # ① 상한: 최대 20개 중 상위 CAL_LINK_CAP개에만 링크 후보 부여
             link = (
                 (f"배움알리미 · {r['운영기관명']} 접수 시작", r["접수시작일자"])
-                if i < 12 else None
+                if i < CAL_LINK_CAP else None
             )
             entries.append((text, link))
     else:

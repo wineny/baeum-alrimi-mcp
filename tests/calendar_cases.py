@@ -59,18 +59,36 @@ def test_calendar_attachment() -> None:
     print("F1 캘린더 링크 부착(render?action=TEMPLATE·②[예상]·CERTAINTY_RE 무매치): PASS")
 
 
-def test_top12_cap() -> None:
-    # region='시'는 단일 토큰 LIKE 매칭이라 다수 시군구를 광범위하게 히트 —
-    # ① 엔트리 수가 12를 넘는 실측 케이스를 확보해 상한을 능동 검증한다.
+def test_link_cap() -> None:
+    # ① 링크 상한 검증. 기준일이 지날수록 미래 접수창이 줄어 "엔트리 > 12" 전제가
+    # 날짜에 따라 깨지므로(2026-07-13 실측: 최대 12개), 상한 상수를 엔트리 수보다
+    # 작게 낮춰 상한 메커니즘 자체를 날짜와 무관하게 검증한다.
+    # region='시'는 단일 토큰 LIKE 매칭이라 다수 시군구를 광범위하게 히트.
     out = server.get_enrollment_calendar(region="시", months_ahead=6)
     sec1 = out.split("**②", 1)[0] if "**②" in out else out
     entries = sec1.count(" · 강좌 ")
-    links = sec1.count("일정 추가:")
-    assert entries > 12, (
-        f"① 상한 테스트 전제 실패 — 엔트리 {entries}개 (DB 변경 시 region 조정 필요)"
+    assert entries >= 2, (
+        f"① 상한 테스트 전제 실패 — 미래 접수창 엔트리 {entries}개 (<2, 데이터 갱신 필요)"
     )
-    assert links == 12, f"① 링크 상한 위반 — {links}개 부착 (기대 12)"
-    print(f"F1 ① 부착 상한(엔트리 {entries}개 중 12개만 부착): PASS")
+    test_cap = min(server.CAL_LINK_CAP, entries) - 1
+    original_cap = server.CAL_LINK_CAP
+    server.CAL_LINK_CAP = test_cap
+    try:
+        capped = server.get_enrollment_calendar(region="시", months_ahead=6)
+    finally:
+        server.CAL_LINK_CAP = original_cap
+    sec1_capped = capped.split("**②", 1)[0] if "**②" in capped else capped
+    links = sec1_capped.count("일정 추가:")
+    assert links == test_cap, f"① 링크 상한 위반 — {links}개 부착 (기대 {test_cap})"
+    # 프로덕션 상수(12) 경로: 부착 수가 상한을 절대 초과하지 않음도 확인
+    prod_links = sec1.count("일정 추가:")
+    assert prod_links <= server.CAL_LINK_CAP, (
+        f"① 프로덕션 상한 초과 — {prod_links}개 > {server.CAL_LINK_CAP}"
+    )
+    print(
+        f"F1 ① 부착 상한(엔트리 {entries}개, 상한 {test_cap} 강제 시 {links}개 부착"
+        f" · 프로덕션 {prod_links}≤{server.CAL_LINK_CAP}): PASS"
+    )
 
 
 def test_link_safety_net() -> None:
@@ -144,7 +162,7 @@ def test_search_only_upcoming() -> None:
 def main() -> int:
     test_gcal_link_unit()
     test_calendar_attachment()
-    test_top12_cap()
+    test_link_cap()
     test_link_safety_net()
     test_budget_regression()
     test_search_only_upcoming()
